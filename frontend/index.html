@@ -78,7 +78,15 @@
                     method: "POST",
                     body: formData
                 });
+                
                 const res = await response.json();
+                
+                // NEW: Handle the AI rejection gracefully!
+                if (!response.ok) {
+                    alert("🚨 AI REJECTION: " + res.detail);
+                    return; // Stop the code here so it doesn't crash
+                }
+
                 extractedData = res.data;
 
                 document.getElementById('billSummary').textContent = 
@@ -88,7 +96,7 @@
                 document.getElementById('itemsSection').classList.remove('hidden');
                 rebuildUI();
             } catch (err) {
-                alert("Could not contact backend on port 8000.");
+                alert("Could not contact backend on port 8000. Check terminal logs.");
                 console.error(err);
             } finally {
                 document.getElementById('loading').classList.add('hidden');
