@@ -102,6 +102,27 @@
         </p>
       </section>
 
+      <!-- === SMART BUDGET GUARD UI === -->
+<div class="bg-gray-800/50 border border-gray-700 p-6 rounded-2xl mb-6 shadow-lg backdrop-blur-md">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-white font-semibold text-lg flex items-center gap-2">
+            <span>🛡️</span> Smart Budget Guard
+        </h3>
+        <button onclick="setNewBudget()" class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded-full transition">Edit Limit</button>
+    </div>
+    
+    <div class="mb-2 flex justify-between text-sm">
+        <span class="text-gray-400">Spent: <span id="spentAmount" class="text-white font-medium">₹0</span></span>
+        <span class="text-gray-400">Limit: <span id="budgetLimit" class="text-white font-medium">₹5000</span></span>
+    </div>
+    
+    <!-- Progress Bar -->
+    <div class="w-full bg-gray-700 rounded-full h-3 mb-1 overflow-hidden">
+        <div id="budgetBar" class="h-3 rounded-full bg-green-500 transition-all duration-500" style="width: 0%"></div>
+    </div>
+    <p id="budgetAlert" class="text-xs text-gray-400 text-right mt-2">Looking good! Keep it up.</p>
+</div>
+<!-- ============================== -->
       <!-- Snap or Upload -->
       <section aria-labelledby="upload-title" class="flex flex-col gap-4">
 
@@ -189,6 +210,63 @@
 
   <script>
         let extractedData = null;
+        // --- SMART BUDGET GUARD LOGIC ---
+
+// IMPORTANT: Paste your actual live Render backend URL inside these quotes
+// It should look something like "https://sih-receipt-splitter-xxxx.onrender.com"
+const BUDGET_BASE_URL = "YOUR_RENDER_URL_HERE"; 
+
+async function loadBudget() {
+    try {
+        const res = await fetch(`${BUDGET_BASE_URL}/api/budget`); 
+        const data = await res.json();
+        
+        document.getElementById("spentAmount").innerText = `₹${data.current_spent}`;
+        document.getElementById("budgetLimit").innerText = `₹${data.monthly_limit}`;
+        
+        const bar = document.getElementById("budgetBar");
+        bar.style.width = `${Math.min(data.percentage, 100)}%`;
+        
+        const alertText = document.getElementById("budgetAlert");
+        
+        if (data.status === "Red") {
+            bar.className = "h-3 rounded-full bg-red-500 transition-all duration-500";
+            alertText.innerText = "⚠️ Warning: Nearing your monthly limit!";
+            alertText.className = "text-xs text-red-400 text-right mt-2 font-bold";
+        } else if (data.status === "Yellow") {
+            bar.className = "h-3 rounded-full bg-yellow-500 transition-all duration-500";
+            alertText.innerText = "Watch out, spending is adding up.";
+            alertText.className = "text-xs text-yellow-400 text-right mt-2";
+        } else {
+            bar.className = "h-3 rounded-full bg-green-500 transition-all duration-500";
+            alertText.innerText = "Looking good! Keep it up.";
+            alertText.className = "text-xs text-green-400 text-right mt-2";
+        }
+    } catch (error) {
+        console.error("Error loading budget:", error);
+    }
+}
+
+async function setNewBudget() {
+    const newLimit = prompt("Enter your new monthly pocket money limit (in ₹):");
+    if (newLimit && !isNaN(newLimit) && Number(newLimit) > 0) {
+        try {
+            await fetch(`${BUDGET_BASE_URL}/api/budget`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ new_limit: Number(newLimit) })
+            });
+            loadBudget(); // Refresh the visual bar immediately
+        } catch (error) {
+            console.error("Failed to update budget", error);
+        }
+    } else if (newLimit !== null) {
+        alert("Please enter a valid number.");
+    }
+}
+
+// Load the budget as soon as the page opens
+window.addEventListener('DOMContentLoaded', loadBudget);
 
         async function fetchHistory() {
             try {

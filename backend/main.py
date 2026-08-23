@@ -2,6 +2,8 @@ import base64
 import datetime
 import io
 import json
+import datetime
+import calendar
 import os
 import sqlite3
 from typing import Dict, List
@@ -17,6 +19,30 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 app = FastAPI(title="SIH Multi-Payer Expense Splitter API")
+
+
+# --- SMART BUDGET GUARD DATABASE SETUP ---
+# This automatically creates 'history.db' if you don't have it
+conn = sqlite3.connect("history.db", check_same_thread=False)
+cursor = conn.cursor()
+
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS budget (
+        id INTEGER PRIMARY KEY,
+        monthly_limit REAL,
+        current_spent REAL DEFAULT 0.0
+    )
+''')
+cursor.execute('INSERT OR IGNORE INTO budget (id, monthly_limit, current_spent) VALUES (1, 5000.0, 0.0)')
+conn.commit()
+try:
+    cursor.execute("ALTER TABLE budget ADD COLUMN fixed_expenses REAL DEFAULT 0.0")
+    conn.commit()
+except:
+    pass
+
+# -----------------------------------------
+
 
 # Load environment variables
 load_dotenv()
@@ -261,3 +287,66 @@ def calculate_multi_payer_split(req: MultiPayerSplitRequest):
       "net_balances": balances,
       "settlements": settlements,
   }
+  class BudgetUpdate(BaseModel):
+    new_limit: float
+
+class ExpenseAdd(BaseModel):
+    amount: float
+
+class FixedUpdate(BaseModel):
+    fixed: float
+
+@app.get("/api/budget")
+def get_budget():
+    cursor.execute("SELECT monthly_limit, current_spent, fixed_expenses FROM budget WHERE id=1")
+    row = cursor.fetchone()
+    
+    if not row:
+        return {"monthly_limit": 5000, "current_spent": 0, "fixed_expenses": 0, "status": "Green", "percentage": 0, "leftover": 5000, "daily_limit": 0}
+    
+    limit, spent, fixed = row
+    if fixed is None: fixed = 0.0
+    
+    # Calculate Leftover
+    leftover = limit - spent - fixed
+    
+    # Calculate Safe Daily Spend
+    today = datetime.date.today()
+    _, last_day = calendar.monthrange(today.year, today.month)
+    days_left = last_day - today.day + 1
+    daily_limit = leftover / days_left if days_left > 0 and leftover > 0 else 0
+
+    total_committed = spent + fixed
+    percentage = (total_committed / limit * 100) if limit > 0 else 0
+    
+    if percentage >= 90: status_color = "Red"
+    elif percentage >= 70: status_color = "Yellow"
+    else: status_color = "Green"
+    
+    return {
+        "monthly_limit": limit,
+        "current_spent": spent,
+        "fixed_expenses": fixed,
+        "leftover": round(leftover, 2),
+        "daily_limit": round(daily_limit, 2),
+        "percentage": round(percentage, 1),
+        "status": status_color
+    }
+
+@app.post("/api/budget")
+def update_budget(req: BudgetUpdate):
+    cursor.execute("UPDATE budget SET monthly_limit = ? WHERE id = 1", (req.new_limit,))
+    conn.commit()
+    return {"message": "Budget limit updated"}
+
+@app.post("/api/budget/fixed")
+def update_fixed(req: FixedUpdate):
+    cursor.execute("UPDATE budget SET fixed_expenses = ? WHERE id = 1", (req.fixed,))
+    conn.commit()
+    return {"message": "Fixed expenses updated"}
+
+@app.post("/api/budget/add")
+def add_expense(req: ExpenseAdd):
+    cursor.execute("UPDATE budget SET current_spent = current_spent + ? WHERE id = 1", (req.amount,))
+    conn.commit()
+    return {"message": "Expense added manually"}
