@@ -203,10 +203,9 @@ def calculate_multi_payer_split(req: MultiPayerSplitRequest):
         reverse=True,
     )
 
-   settlements = []
-d_idx = 0
-c_idx = 0
-
+    settlements = []
+    d_idx = 0
+    c_idx = 0
     while d_idx < len(debtors) and c_idx < len(creditors):
         debtor, creditor = debtors[d_idx], creditors[c_idx]
         settle_amount = round(min(debtor["amount"], creditor["amount"]), 2)
