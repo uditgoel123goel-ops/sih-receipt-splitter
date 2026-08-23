@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Receipt Splitter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen p-6 font-sans text-slate-800">
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
+        
+        <div class="border-b pb-4 mb-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-extrabold text-indigo-900">🧾 AI Bill Splitter</h1>
+                <p class="text-slate-500 text-sm">Snap a receipt, split costs, and save to your ledger.</p>
+            </div>
+            <button onclick="fetchHistory()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-700">
+                📜 View Ledger
+            </button>
+        </div>
+
+        <!-- Section 1: Upload (Now with Mobile Camera Support) -->
+        <div class="mb-6 p-4 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+            <label class="block text-sm font-semibold text-slate-700 mb-2">1. 📸 Snap or Upload Bill</label>
+            <!-- Notice the 'capture="environment"' below -->
+            <input type="file" id="receiptFile" accept="image/*" capture="environment" class="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-200 rounded-lg p-2 bg-white" />
+            <button onclick="parseReceipt()" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-lg transition shadow">
+                Extract Items with AI
+            </button>
+            <p id="loading" class="hidden text-indigo-600 font-medium mt-3 text-center animate-pulse">🤖 Reading receipt...</p>
+        </div>
+
+        <!-- Section 2: History Ledger (Hidden by default) -->
+        <div id="historySection" class="hidden mb-6 p-5 bg-amber-50 rounded-xl border border-amber-200">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-amber-900">Past Splits</h2>
+                <button onclick="document.getElementById('historySection').classList.add('hidden')" class="text-xs font-bold text-amber-700">Close</button>
+            </div>
+            <div id="historyContainer" class="space-y-3 max-h-64 overflow-y-auto"></div>
+        </div>
+
+        <!-- Configuration & Items sections remain the same -->
+        <div id="configSection" class="hidden mb-6 p-5 bg-indigo-50 rounded-xl border border-indigo-100">
+            <h2 class="text-lg font-bold text-indigo-900 mb-3">2. Group Details</h2>
+            <input type="text" id="friendsInput" value="Udit, Aman, Priya" onchange="rebuildUI()" class="w-full text-sm p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none mb-4" />
+            <div id="payersContainer" class="space-y-2"></div>
+        </div>
+
+        <div id="itemsSection" class="hidden mb-6">
+            <div id="itemsContainer" class="space-y-3"></div>
+            <button onclick="calculateMultiSplit()" class="mt-6 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md">
+                Compute & Save Split
+            </button>
+        </div>
+
+        <div id="settlementsSection" class="hidden border-t pt-6">
+            <div id="qrContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+    </div>
+
+    <script>
+        let extractedData = null;
+
+        async function fetchHistory() {
+            try {
+                const res = await fetch("http://localhost:8000/api/history");
+                const data = await res.json();
+                const container = document.getElementById('historyContainer');
+                container.innerHTML = '';
+                
+                if (data.data.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-amber-700">No past splits found in the database.</p>';
+                }
+
+                data.data.forEach(record => {
+                    let settlementsHtml = record.settlements.map(s => `<p class="text-xs text-slate-600">${s.from_person} owes ${s.to_person}: ₹${s.amount}</p>`).join('');
+                    container.innerHTML += `
+                        <div class="bg-white p-3 rounded shadow-sm border border-amber-100">
+                            <p class="font-bold text-sm text-slate-800">Date: ${record.date} • Total: ₹${record.total}</p>
+                            <div class="mt-2 pl-2 border-l-2 border-amber-200">${settlementsHtml}</div>
+                        </div>
+                    `;
+                });
+                document.getElementById('historySection').classList.remove('hidden');
+            } catch (err) {
+                alert("Could not load history.");
+            }
+        }
+
+        async function parseReceipt() {
+            const fileInput = document.getElementById('receiptFile');
+            if (!fileInput.files[0]) return alert("Please select a receipt.");
+            
+            document.getElementById('loading').classList.remove('hidden');
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            try {
+                const response = await fetch("http://localhost:8000/api/parse-receipt", { method: "POST", body: formData });
+                const res = await response.json();
+                if (!response.ok) return alert("🚨 AI REJECTION: " + res.detail);
+                
+                extractedData = res.data;
+                document.getElementById('configSection').classList.remove('hidden');
+                document.getElementById('itemsSection').classList.remove('hidden');
+                rebuildUI();
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        function getFriendsList() { return document.getElementById('friendsInput').value.split(',').map(s => s.trim()).filter(s => s.length > 0); }
+
+        function rebuildUI() {
+            const friends = getFriendsList();
+            const pContainer = document.getElementById('payersContainer');
+            pContainer.innerHTML = '';
+            friends.forEach((friend, idx) => {
+                pContainer.innerHTML += `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 items-center bg-white p-2 rounded-lg border">
+                        <span class="text-sm font-semibold">${friend}</span>
+                        <input type="number" id="paid_${friend}" placeholder="Paid (₹)" value="${idx === 0 && extractedData ? extractedData.total : 0}" class="text-sm p-1.5 border rounded" />
+                        <input type="text" id="upi_${friend}" placeholder="UPI ID" value="${idx === 0 ? 'demo@upi' : ''}" class="text-sm p-1.5 border rounded" />
+                    </div>
+                `;
+            });
+
+            const iContainer = document.getElementById('itemsContainer');
+            iContainer.innerHTML = '';
+            extractedData.items.forEach((item, itemIdx) => {
+                const checkboxes = friends.map(f => `<label class="text-xs bg-slate-50 border p-1 rounded"><input type="checkbox" name="item_${itemIdx}" value="${f}" checked> ${f}</label>`).join('');
+                iContainer.innerHTML += `<div class="p-3 bg-white border rounded shadow-sm"><p class="font-bold text-sm">${item.name} (₹${item.price})</p><div class="flex gap-2 mt-2">${checkboxes}</div></div>`;
+            });
+        }
+
+        async function calculateMultiSplit() {
+            const friends = getFriendsList();
+            const payers = friends.map(f => ({ name: f, amount_paid: parseFloat(document.getElementById(`paid_${f}`).value) || 0, upi_id: document.getElementById(`upi_${f}`).value }));
+            const items = extractedData.items.map((item, idx) => ({ name: item.name, price: item.price, assigned_to: Array.from(document.querySelectorAll(`input[name="item_${idx}"]:checked`)).map(cb => cb.value) }));
+
+            try {
+                const response = await fetch("http://localhost:8000/api/calculate-split", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ tax: extractedData.tax || 0, service_charge: extractedData.service_charge || 0, payers, items })
+                });
+                const data = await response.json();
+                
+                const qrContainer = document.getElementById('qrContainer');
+                qrContainer.innerHTML = '';
+                data.settlements.forEach(s => {
+                    qrContainer.innerHTML += `
+                        <div class="bg-white border rounded p-4 text-center shadow-sm">
+                            <p class="font-bold">${s.from_person} ➔ ${s.to_person}</p>
+                            <p class="text-2xl text-emerald-600 font-bold my-2">₹${s.amount}</p>
+                            ${s.qr_code_url ? `<img src="${s.qr_code_url}" class="w-32 h-32 mx-auto">` : ''}
+                        </div>`;
+                });
+                document.getElementById('settlementsSection').classList.remove('hidden');
+                alert("Split calculated and saved to Database ledger!");
+            } catch (err) { alert("Error calculating split."); }
+        }
+    </script>
+</body>
+</html>

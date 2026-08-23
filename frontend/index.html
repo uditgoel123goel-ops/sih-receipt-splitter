@@ -1,64 +1,193 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-black">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
     <title>AI Receipt Splitter</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-100 min-h-screen p-6 font-sans text-slate-800">
-    <div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
-        
-        <div class="border-b pb-4 mb-6 flex justify-between items-center">
-            <div>
-                <h1 class="text-3xl font-extrabold text-indigo-900">🧾 AI Bill Splitter</h1>
-                <p class="text-slate-500 text-sm">Snap a receipt, split costs, and save to your ledger.</p>
-            </div>
-            <button onclick="fetchHistory()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-700">
-                📜 View Ledger
-            </button>
-        </div>
-
-        <!-- Section 1: Upload (Now with Mobile Camera Support) -->
-        <div class="mb-6 p-4 bg-slate-50 rounded-xl border border-dashed border-slate-300">
-            <label class="block text-sm font-semibold text-slate-700 mb-2">1. 📸 Snap or Upload Bill</label>
-            <!-- Notice the 'capture="environment"' below -->
-            <input type="file" id="receiptFile" accept="image/*" capture="environment" class="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-200 rounded-lg p-2 bg-white" />
-            <button onclick="parseReceipt()" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-lg transition shadow">
-                Extract Items with AI
-            </button>
-            <p id="loading" class="hidden text-indigo-600 font-medium mt-3 text-center animate-pulse">🤖 Reading receipt...</p>
-        </div>
-
-        <!-- Section 2: History Ledger (Hidden by default) -->
-        <div id="historySection" class="hidden mb-6 p-5 bg-amber-50 rounded-xl border border-amber-200">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-amber-900">Past Splits</h2>
-                <button onclick="document.getElementById('historySection').classList.add('hidden')" class="text-xs font-bold text-amber-700">Close</button>
-            </div>
-            <div id="historyContainer" class="space-y-3 max-h-64 overflow-y-auto"></div>
-        </div>
-
-        <!-- Configuration & Items sections remain the same -->
-        <div id="configSection" class="hidden mb-6 p-5 bg-indigo-50 rounded-xl border border-indigo-100">
-            <h2 class="text-lg font-bold text-indigo-900 mb-3">2. Group Details</h2>
-            <input type="text" id="friendsInput" value="Udit, Aman, Priya" onchange="rebuildUI()" class="w-full text-sm p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none mb-4" />
-            <div id="payersContainer" class="space-y-2"></div>
-        </div>
-
-        <div id="itemsSection" class="hidden mb-6">
-            <div id="itemsContainer" class="space-y-3"></div>
-            <button onclick="calculateMultiSplit()" class="mt-6 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md">
-                Compute & Save Split
-            </button>
-        </div>
-
-        <div id="settlementsSection" class="hidden border-t pt-6">
-            <div id="qrContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-        </div>
-    </div>
-
+    <meta name="description" content="Snap a bill, let AI extract the items, and split the total across your group with UPI-ready settlements." />
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            },
+            colors: {
+              ink: '#05060A',
+              indigoglow: '#6C5CE7',
+              emeraldglow: '#00E5A0',
+            },
+            keyframes: {
+              pulseglow: {
+                '0%, 100%': { boxShadow: '0 0 0 0 rgba(108,92,231,0.55), 0 0 32px -4px rgba(108,92,231,0.5)' },
+                '50%': { boxShadow: '0 0 0 12px rgba(108,92,231,0.0), 0 0 56px 0px rgba(108,92,231,0.75)' },
+              },
+              drift: {
+                '0%, 100%': { transform: 'translate3d(0,0,0) scale(1)' },
+                '50%': { transform: 'translate3d(0,-18px,0) scale(1.06)' },
+              },
+              sweep: {
+                '0%': { transform: 'translateX(-120%)' },
+                '100%': { transform: 'translateX(220%)' },
+              },
+            },
+            animation: {
+              pulseglow: 'pulseglow 2.6s ease-in-out infinite',
+              drift: 'drift 14s ease-in-out infinite',
+              sweep: 'sweep 3.4s ease-in-out infinite',
+            },
+          },
+        },
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+
+<body class="min-h-screen bg-ink font-sans text-white/90 antialiased selection:bg-indigoglow/40">
+
+  <!-- cinematic lighting -->
+  <div aria-hidden="true" class="pointer-events-none fixed inset-0 overflow-hidden">
+    <div class="absolute -top-40 -left-24 h-[26rem] w-[26rem] rounded-full bg-indigoglow/25 blur-[120px] animate-drift"></div>
+    <div class="absolute top-1/3 -right-28 h-[22rem] w-[22rem] rounded-full bg-emeraldglow/15 blur-[130px] animate-drift" style="animation-delay:-6s"></div>
+    <div class="absolute bottom-0 left-1/2 h-[20rem] w-[34rem] -translate-x-1/2 rounded-full bg-indigoglow/15 blur-[140px]"></div>
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(255,255,255,0.10),transparent_55%)]"></div>
+    <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
+  </div>
+
+  <div class="relative mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-40 pt-6 sm:max-w-lg">
+
+    <!-- Header -->
+    <header class="sticky top-4 z-30">
+      <div class="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-3 pl-4 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.9)] backdrop-blur-xl">
+
+        <div class="flex items-center gap-3">
+          <span class="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigoglow to-indigoglow/40 shadow-[0_0_20px_-2px_rgba(108,92,231,0.9)]">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-white" aria-hidden="true">
+              <path d="M12 3v18M7 7h7a3 3 0 0 1 0 6H7m0 0h8" />
+            </svg>
+          </span>
+          <div>
+            <h1 class="text-[15px] font-semibold leading-tight tracking-tight text-white">AI Bill Splitter</h1>
+            <p class="text-[11px] leading-tight text-white/45">Scan · Split · Settle</p>
+          </div>
+        </div>
+        <button onclick="fetchHistory()" type="button" class="group inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 text-[12px] font-medium text-white/80 transition hover:border-emeraldglow/50 hover:bg-emeraldglow/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emeraldglow/60">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 text-emeraldglow" aria-hidden="true">
+            <path d="M4 5h16M4 12h16M4 19h10" />
+          </svg>
+          View Ledger
+        </button>
+      </div>
+    </header>
+
+    <main class="mt-8 flex flex-col gap-8">
+
+      <!-- Hero line -->
+      <section aria-labelledby="hero-title">
+        <p class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white/50 backdrop-blur">
+          <span class="h-1.5 w-1.5 rounded-full bg-emeraldglow shadow-[0_0_10px_2px_rgba(0,229,160,0.8)]"></span>
+          Vision model online
+        </p>
+        <h2 id="hero-title" class="mt-4 text-pretty text-[30px] font-semibold leading-[1.15] tracking-tight text-white">
+          Split any bill in<br />
+          <span class="bg-gradient-to-r from-indigoglow via-white to-emeraldglow bg-clip-text text-transparent">three seconds flat.</span>
+        </h2>
+        <p class="mt-3 text-pretty text-[13.5px] leading-relaxed text-white/50">
+          Point your camera at the receipt. We read every line item, tag who shared what, and generate UPI-ready settlements.
+        </p>
+      </section>
+
+      <!-- Snap or Upload -->
+      <section aria-labelledby="upload-title" class="flex flex-col gap-4">
+
+        <div class="flex items-end justify-between">
+          <h3 id="upload-title" class="text-[13px] font-semibold uppercase tracking-[0.16em] text-white/70">Snap or Upload Bill</h3>
+          <span class="font-mono text-[11px] text-white/35">Step 01</span>
+        </div>
+
+        <label for="receiptFile" class="group relative block cursor-pointer overflow-hidden rounded-3xl border border-dashed border-indigoglow/45 bg-white/[0.035] p-8 text-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_0_60px_-24px_rgba(108,92,231,0.9)] backdrop-blur-xl transition hover:border-indigoglow/80 hover:bg-indigoglow/[0.07] focus-within:ring-2 focus-within:ring-indigoglow/70">
+          <span aria-hidden="true" class="absolute inset-y-0 -left-1/3 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-sweep"></span>
+          <span class="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-white/15 bg-gradient-to-br from-white/15 to-white/[0.02] shadow-[0_0_36px_-6px_rgba(108,92,231,0.9)]">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7 text-white" aria-hidden="true">
+              <path d="M14.5 4h-5L8 6H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3l-1.5-2Z" />
+              <circle cx="12" cy="12.5" r="3.2" />
+            </svg>
+          </span>
+          <span class="relative mt-5 block text-[15px] font-medium text-white">Drop your receipt here</span>
+          <span class="relative mt-1 block text-[12.5px] text-white/45">or tap to capture · JPG, PNG, HEIC, PDF up to 10 MB</span>
+          <span class="relative mt-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-4 py-2 text-[12px] font-medium text-white/85">
+            Browse files
+          </span>
+          <!-- CR: Replace input, keep id unchanged and add all desired attrs -->
+          <input type="file" id="receiptFile" accept="image/*,application/pdf" capture="environment" class="sr-only" onchange="showFileName(this)" />
+        </label>
+        <p id="fileNameDisplay" class="mt-2 text-sm text-emerald-400 font-medium text-center"></p>
+        <button onclick="parseReceipt()" type="button" class="relative w-full animate-pulseglow overflow-hidden rounded-2xl bg-gradient-to-r from-indigoglow via-[#7d6ef0] to-indigoglow px-6 py-4 text-[14.5px] font-semibold tracking-tight text-white transition active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+          <span aria-hidden="true" class="absolute inset-x-0 top-0 h-px bg-white/50"></span>
+          <span class="inline-flex items-center justify-center gap-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" aria-hidden="true">
+              <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z" />
+            </svg>
+            Extract Items with AI
+          </span>
+        </button>
+        <p id="loading" class="hidden text-indigo-400 font-medium mt-3 text-center animate-pulse">🤖 Reading receipt...</p>
+      </section>
+
+      <!-- Section 2: History Ledger (Hidden by default) -->
+      <section id="historySection" class="hidden mb-6 p-5 bg-amber-100/10 rounded-2xl border border-amber-400/20">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold text-amber-100">Past Splits</h2>
+            <button onclick="document.getElementById('historySection').classList.add('hidden')" class="text-xs font-bold text-amber-300 rounded-xl px-2 py-1 bg-amber-900/10 hover:bg-amber-900/20 transition">Close</button>
+        </div>
+        <div id="historyContainer" class="space-y-3 max-h-64 overflow-y-auto"></div>
+      </section>
+
+      <!-- Configuration & Items sections remain the same, but update input styles for high-contrast -->
+      <section id="configSection" class="hidden flex flex-col gap-4 p-0">
+        <div class="flex items-end justify-between">
+          <h3 class="text-[13px] font-semibold uppercase tracking-[0.16em] text-white/70 mb-1">Group Details</h3>
+          <span class="font-mono text-[11px] text-white/35">Step 02</span>
+        </div>
+        <input type="text" id="friendsInput" value="Udit, Aman, Priya" onchange="rebuildUI()" class="w-full text-sm h-12 rounded-xl border border-white/12 bg-gray-900 px-4 text-white placeholder:text-gray-400 focus:border-emeraldglow/60 focus:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-emeraldglow/25 mb-4 mt-2" />
+        <div id="payersContainer" class="space-y-2"></div>
+      </section>
+
+      <section id="itemsSection" class="hidden flex flex-col gap-4 p-0">
+        <div id="itemsContainer" class="space-y-3"></div>
+        <button onclick="calculateMultiSplit()" type="button" class="group relative w-full overflow-hidden rounded-3xl bg-gradient-to-r from-emeraldglow via-[#3df0bd] to-emeraldglow pr-0 py-5 text-[12px] font-semibold tracking-tight text-black shadow-[0_0_60px_-10px_rgba(0,229,160,0.85)] transition hover:shadow-[0_0_80px_-6px_rgba(0,229,160,1)] active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-white mt-6">
+          <span aria-hidden="true" class="absolute inset-x-0 top-0 h-px bg-white/70"></span>
+          <span aria-hidden="true" class="absolute inset-y-0 -left-1/3 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-sweep"></span>
+          <span class="relative inline-flex items-center justify-center gap-2.5">
+            Compute &amp; Save Split
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 transition group-hover:translate-x-0.5" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </span>
+        </button>
+      </section>
+
+      <section id="settlementsSection" class="hidden border-t border-white/7 pt-6">
+        <div id="qrContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      </section>
+
+    </main>
+
+    <!-- Sticky CTA & settlements info -->
+    <div class="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black via-black/90 to-transparent px-5 pb-6 pt-10">
+      <div class="mx-auto w-full max-w-md sm:max-w-lg">
+        <!-- This button is left empty, as actual submit is in itemsSection; but space reserved for stickiness -->
+        <p class="mt-2.5 text-center text-[11px] text-white/35">Settlements are generated as UPI deep links · no money moves without you</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
         let extractedData = null;
 
         async function fetchHistory() {
@@ -73,20 +202,32 @@
                 }
 
                 data.data.forEach(record => {
-                    let settlementsHtml = record.settlements.map(s => `<p class="text-xs text-slate-600">${s.from_person} owes ${s.to_person}: ₹${s.amount}</p>`).join('');
-                    container.innerHTML += `
-                        <div class="bg-white p-3 rounded shadow-sm border border-amber-100">
-                            <p class="font-bold text-sm text-slate-800">Date: ${record.date} • Total: ₹${record.total}</p>
-                            <div class="mt-2 pl-2 border-l-2 border-amber-200">${settlementsHtml}</div>
-                        </div>
-                    `;
-                });
+    let settlementsHtml = record.settlements.map(s => `<p class="text-xs text-gray-300">• <span class="text-emerald-400 font-semibold">${s.from_person}</span> owes <span class="text-emerald-400 font-semibold">${s.to_person}</span>: ₹${s.amount.toFixed(2)}</p>`).join('');
+    container.innerHTML += `
+        <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl shadow-lg text-white space-y-2">
+            <div class="flex justify-between items-center text-xs text-gray-400 border-b border-white/10 pb-2">
+                <span>📅 ${record.date}</span>
+                <span class="text-emerald-300 font-bold">Total: ₹${record.total}</span>
+            </div>
+            <div class="space-y-1 pl-1">
+                ${settlementsHtml}
+            </div>
+        </div>
+    `;
+});
                 document.getElementById('historySection').classList.remove('hidden');
             } catch (err) {
                 alert("Could not load history.");
             }
         }
-
+        function showFileName(input) {
+    const display = document.getElementById('fileNameDisplay');
+    if (input.files && input.files[0]) {
+        display.textContent = `📁 Selected file: ${input.files[0].name}`;
+    } else {
+        display.textContent = '';
+    }
+}
         async function parseReceipt() {
             const fileInput = document.getElementById('receiptFile');
             if (!fileInput.files[0]) return alert("Please select a receipt.");
@@ -117,10 +258,10 @@
             pContainer.innerHTML = '';
             friends.forEach((friend, idx) => {
                 pContainer.innerHTML += `
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 items-center bg-white p-2 rounded-lg border">
-                        <span class="text-sm font-semibold">${friend}</span>
-                        <input type="number" id="paid_${friend}" placeholder="Paid (₹)" value="${idx === 0 && extractedData ? extractedData.total : 0}" class="text-sm p-1.5 border rounded" />
-                        <input type="text" id="upi_${friend}" placeholder="UPI ID" value="${idx === 0 ? 'demo@upi' : ''}" class="text-sm p-1.5 border rounded" />
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 items-center bg-gray-900 p-2 rounded-lg border border-gray-700">
+                        <span class="text-sm font-semibold text-gray-100">${friend}</span>
+                        <input type="number" id="paid_${friend}" placeholder="Paid (₹)" value="${idx === 0 && extractedData ? extractedData.total : 0}" class="text-sm p-2 border border-gray-600 rounded bg-gray-800 text-white placeholder:text-gray-400 focus:border-emeraldglow/60 focus:bg-gray-900 focus:outline-none" />
+                        <input type="text" id="upi_${friend}" placeholder="UPI ID" value="${idx === 0 ? 'demo@upi' : ''}" class="text-sm p-2 border border-gray-600 rounded bg-gray-800 text-white placeholder:text-gray-400 focus:border-emeraldglow/60 focus:bg-gray-900 focus:outline-none" />
                     </div>
                 `;
             });
@@ -128,8 +269,8 @@
             const iContainer = document.getElementById('itemsContainer');
             iContainer.innerHTML = '';
             extractedData.items.forEach((item, itemIdx) => {
-                const checkboxes = friends.map(f => `<label class="text-xs bg-slate-50 border p-1 rounded"><input type="checkbox" name="item_${itemIdx}" value="${f}" checked> ${f}</label>`).join('');
-                iContainer.innerHTML += `<div class="p-3 bg-white border rounded shadow-sm"><p class="font-bold text-sm">${item.name} (₹${item.price})</p><div class="flex gap-2 mt-2">${checkboxes}</div></div>`;
+                const checkboxes = friends.map(f => `<label class="text-xs bg-gray-800 text-gray-100 border border-gray-700 p-1 rounded flex items-center gap-1"><input type="checkbox" name="item_${itemIdx}" value="${f}" checked class="accent-emeraldglow mr-1"> ${f}</label>`).join('');
+                iContainer.innerHTML += `<div class="p-3 bg-gray-900 border border-gray-700 rounded shadow-sm"><p class="font-bold text-sm text-gray-100">${item.name} <span class="font-mono text-emeraldglow">(₹${item.price})</span></p><div class="flex flex-wrap gap-2 mt-2">${checkboxes}</div></div>`;
             });
         }
 
@@ -148,13 +289,19 @@
                 const qrContainer = document.getElementById('qrContainer');
                 qrContainer.innerHTML = '';
                 data.settlements.forEach(s => {
-                    qrContainer.innerHTML += `
-                        <div class="bg-white border rounded p-4 text-center shadow-sm">
-                            <p class="font-bold">${s.from_person} ➔ ${s.to_person}</p>
-                            <p class="text-2xl text-emerald-600 font-bold my-2">₹${s.amount}</p>
-                            ${s.qr_code_url ? `<img src="${s.qr_code_url}" class="w-32 h-32 mx-auto">` : ''}
-                        </div>`;
-                });
+    qrContainer.innerHTML += `
+        <div class="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl shadow-xl text-white flex flex-col items-center text-center space-y-3">
+            <div class="space-y-1">
+                <p class="text-xs text-gray-300 uppercase tracking-wider font-semibold">Payment Instruction</p>
+                <p class="text-lg font-bold text-white">
+                    <span class="text-emerald-400">${s.from_person}</span> pays <span class="text-emerald-400">${s.to_person}</span>
+                </p>
+                <p class="text-2xl font-extrabold text-emerald-300">₹${s.amount.toFixed(2)}</p>
+            </div>
+            ${s.qr_code_url ? `<img src="${s.qr_code_url}" class="w-40 h-40 object-contain rounded-xl border border-white/20 bg-white p-2">` : ''}
+        </div>
+    `;
+});
                 document.getElementById('settlementsSection').classList.remove('hidden');
                 alert("Split calculated and saved to Database ledger!");
             } catch (err) { alert("Error calculating split."); }
