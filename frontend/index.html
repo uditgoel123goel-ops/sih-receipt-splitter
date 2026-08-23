@@ -192,7 +192,7 @@
 
         async function fetchHistory() {
             try {
-                const res = await fetch("http://localhost:8000/api/history");
+                const res = await fetch("https://honest-eagles-refuse.loca.lt/api/history");
                 const data = await res.json();
                 const container = document.getElementById('historyContainer');
                 container.innerHTML = '';
@@ -237,7 +237,7 @@
             formData.append("file", fileInput.files[0]);
 
             try {
-                const response = await fetch("http://localhost:8000/api/parse-receipt", { method: "POST", body: formData });
+                const response = await fetch("https://honest-eagles-refuse.loca.lt/api/parse-receipt", { method: "POST", body: formData });
                 const res = await response.json();
                 if (!response.ok) return alert("🚨 AI REJECTION: " + res.detail);
                 
@@ -280,7 +280,7 @@
             const items = extractedData.items.map((item, idx) => ({ name: item.name, price: item.price, assigned_to: Array.from(document.querySelectorAll(`input[name="item_${idx}"]:checked`)).map(cb => cb.value) }));
 
             try {
-                const response = await fetch("http://localhost:8000/api/calculate-split", {
+                const response = await fetch("https://honest-eagles-refuse.loca.lt/api/calculate-split", {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ tax: extractedData.tax || 0, service_charge: extractedData.service_charge || 0, payers, items })
                 });

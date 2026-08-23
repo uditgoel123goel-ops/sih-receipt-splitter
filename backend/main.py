@@ -12,9 +12,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
 from PIL import Image, ImageEnhance
 from pydantic import BaseModel
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+import os
 
-load_dotenv()
 app = FastAPI(title="SIH Multi-Payer Expense Splitter API")
+
+# Load environment variables
+load_dotenv()
+
+# Get the absolute path to the backend directory, then find the frontend folder next to it
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.join(BASE_DIR, "../frontend")
+
+# Mount the frontend directory at the root so your UI loads automatically
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
+
 
 app.add_middleware(
     CORSMiddleware,
