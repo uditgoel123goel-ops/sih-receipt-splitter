@@ -102,25 +102,48 @@
         </p>
       </section>
 
-      <!-- === SMART BUDGET GUARD UI === -->
+     <!-- === SMART BUDGET GUARD UI === -->
 <div class="bg-gray-800/50 border border-gray-700 p-6 rounded-2xl mb-6 shadow-lg backdrop-blur-md">
     <div class="flex justify-between items-center mb-4">
         <h3 class="text-white font-semibold text-lg flex items-center gap-2">
             <span>🛡️</span> Smart Budget Guard
         </h3>
-        <button onclick="setNewBudget()" class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded-full transition">Edit Limit</button>
+        <div class="space-x-2">
+            <button onclick="addManualExpense()" class="text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded-full transition">+ Add Expense</button>
+            <button onclick="setNewBudget()" class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded-full transition">Edit Limit</button>
+        </div>
     </div>
     
-    <div class="mb-2 flex justify-between text-sm">
-        <span class="text-gray-400">Spent: <span id="spentAmount" class="text-white font-medium">₹0</span></span>
-        <span class="text-gray-400">Limit: <span id="budgetLimit" class="text-white font-medium">₹5000</span></span>
+    <div class="grid grid-cols-3 gap-4 mb-4 text-sm bg-gray-900/50 p-3 rounded-xl border border-gray-700">
+        <div class="flex flex-col">
+            <span class="text-gray-400 text-xs">Total Limit</span>
+            <span id="budgetLimit" class="text-white font-medium">₹0</span>
+        </div>
+        <div class="flex flex-col cursor-pointer" onclick="setFixedExpenses()" title="Click to set fixed expenses like Mess or Rent">
+            <span class="text-gray-400 text-xs hover:text-indigo-300 transition">Fixed/Mess ✏️</span>
+            <span id="fixedExpenses" class="text-white font-medium">₹0</span>
+        </div>
+        <div class="flex flex-col">
+            <span class="text-gray-400 text-xs">Spent</span>
+            <span id="spentAmount" class="text-white font-medium">₹0</span>
+        </div>
     </div>
     
     <!-- Progress Bar -->
-    <div class="w-full bg-gray-700 rounded-full h-3 mb-1 overflow-hidden">
+    <div class="w-full bg-gray-700 rounded-full h-3 mb-3 overflow-hidden">
         <div id="budgetBar" class="h-3 rounded-full bg-green-500 transition-all duration-500" style="width: 0%"></div>
     </div>
-    <p id="budgetAlert" class="text-xs text-gray-400 text-right mt-2">Looking good! Keep it up.</p>
+    
+    <div class="flex justify-between items-center mt-2">
+        <div class="flex flex-col">
+            <span class="text-gray-400 text-xs">Leftover Cash</span>
+            <span id="leftoverAmount" class="text-emerald-400 font-bold text-lg">₹0</span>
+        </div>
+        <div class="bg-indigo-500/20 text-indigo-300 px-3 py-2 rounded-lg border border-indigo-500/30 text-right">
+            <span class="block text-[10px] uppercase tracking-wider">Safe Daily Spend</span>
+            <span id="dailyLimit" class="font-bold text-sm">₹0 / day</span>
+        </div>
+    </div>
 </div>
 <!-- ============================== -->
       <!-- Snap or Upload -->
@@ -210,37 +233,34 @@
 
   <script>
         let extractedData = null;
-        // --- SMART BUDGET GUARD LOGIC ---
+       
 
-// IMPORTANT: Paste your actual live Render backend URL inside these quotes
-// It should look something like "https://sih-receipt-splitter-xxxx.onrender.com"
-const BUDGET_BASE_URL = "YOUR_RENDER_URL_HERE"; 
+        // --- SMART BUDGET GUARD LOGIC ---
+        const BUDGET_BASE_URL = "https://sih-receipt-splitter-1.onrender.com"; // Put your actual render URL here!
 
 async function loadBudget() {
     try {
         const res = await fetch(`${BUDGET_BASE_URL}/api/budget`); 
         const data = await res.json();
         
-        document.getElementById("spentAmount").innerText = `₹${data.current_spent}`;
         document.getElementById("budgetLimit").innerText = `₹${data.monthly_limit}`;
+        document.getElementById("fixedExpenses").innerText = `₹${data.fixed_expenses}`;
+        document.getElementById("spentAmount").innerText = `₹${data.current_spent}`;
+        document.getElementById("leftoverAmount").innerText = `₹${data.leftover}`;
+        document.getElementById("dailyLimit").innerText = `₹${data.daily_limit} / day`;
         
         const bar = document.getElementById("budgetBar");
         bar.style.width = `${Math.min(data.percentage, 100)}%`;
         
-        const alertText = document.getElementById("budgetAlert");
-        
         if (data.status === "Red") {
             bar.className = "h-3 rounded-full bg-red-500 transition-all duration-500";
-            alertText.innerText = "⚠️ Warning: Nearing your monthly limit!";
-            alertText.className = "text-xs text-red-400 text-right mt-2 font-bold";
+            document.getElementById("leftoverAmount").className = "text-red-400 font-bold text-lg";
         } else if (data.status === "Yellow") {
             bar.className = "h-3 rounded-full bg-yellow-500 transition-all duration-500";
-            alertText.innerText = "Watch out, spending is adding up.";
-            alertText.className = "text-xs text-yellow-400 text-right mt-2";
+            document.getElementById("leftoverAmount").className = "text-yellow-400 font-bold text-lg";
         } else {
             bar.className = "h-3 rounded-full bg-green-500 transition-all duration-500";
-            alertText.innerText = "Looking good! Keep it up.";
-            alertText.className = "text-xs text-green-400 text-right mt-2";
+            document.getElementById("leftoverAmount").className = "text-emerald-400 font-bold text-lg";
         }
     } catch (error) {
         console.error("Error loading budget:", error);
@@ -248,29 +268,42 @@ async function loadBudget() {
 }
 
 async function setNewBudget() {
-    const newLimit = prompt("Enter your new monthly pocket money limit (in ₹):");
+    const newLimit = prompt("Enter your new total monthly limit (in ₹):");
     if (newLimit && !isNaN(newLimit) && Number(newLimit) > 0) {
-        try {
-            await fetch(`${BUDGET_BASE_URL}/api/budget`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ new_limit: Number(newLimit) })
-            });
-            loadBudget(); // Refresh the visual bar immediately
-        } catch (error) {
-            console.error("Failed to update budget", error);
-        }
-    } else if (newLimit !== null) {
-        alert("Please enter a valid number.");
+        await fetch(`${BUDGET_BASE_URL}/api/budget`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ new_limit: Number(newLimit) })
+        });
+        loadBudget(); 
     }
 }
 
-// Load the budget as soon as the page opens
-window.addEventListener('DOMContentLoaded', loadBudget);
+async function setFixedExpenses() {
+    const newFixed = prompt("Enter fixed expenses (e.g., Hostel/Mess/Rent) (in ₹):");
+    if (newFixed && !isNaN(newFixed) && Number(newFixed) >= 0) {
+        await fetch(`${BUDGET_BASE_URL}/api/budget/fixed`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fixed: Number(newFixed) })
+        });
+        loadBudget(); 
+    }
+}
 
+async function addManualExpense() {
+    const amt = prompt("How much did you just spend? (in ₹):");
+    if (amt && !isNaN(amt) && Number(amt) > 0) {
+        await fetch(`${BUDGET_BASE_URL}/api/budget/add`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ amount: Number(amt) })
+        });
+        loadBudget(); 
+    }
+}
+
+window.addEventListener('DOMContentLoaded', loadBudget);
         async function fetchHistory() {
             try {
-                const res = await fetch("https://honest-eagles-refuse.loca.lt/api/history");
+                const res = await fetch("https://sih-receipt-splitter-1.onrender.com/api/history");
                 const data = await res.json();
                 const container = document.getElementById('historyContainer');
                 container.innerHTML = '';
@@ -315,7 +348,7 @@ window.addEventListener('DOMContentLoaded', loadBudget);
             formData.append("file", fileInput.files[0]);
 
             try {
-                const response = await fetch("https://honest-eagles-refuse.loca.lt/api/parse-receipt", { method: "POST", body: formData });
+                const response = await fetch("https://sih-receipt-splitter-1.onrender.com/api/parse-receipt", { method: "POST", body: formData });
                 const res = await response.json();
                 if (!response.ok) return alert("🚨 AI REJECTION: " + res.detail);
                 
@@ -358,7 +391,7 @@ window.addEventListener('DOMContentLoaded', loadBudget);
             const items = extractedData.items.map((item, idx) => ({ name: item.name, price: item.price, assigned_to: Array.from(document.querySelectorAll(`input[name="item_${idx}"]:checked`)).map(cb => cb.value) }));
 
             try {
-                const response = await fetch("https://honest-eagles-refuse.loca.lt/api/calculate-split", {
+                const response = await fetch("https://sih-receipt-splitter-1.onrender.com/api/calculate-split", {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ tax: extractedData.tax || 0, service_charge: extractedData.service_charge || 0, payers, items })
                 });
