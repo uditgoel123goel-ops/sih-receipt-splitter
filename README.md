@@ -2,7 +2,9 @@
 
 Snap a receipt, let AI extract every line item, and split the total across your group with UPI-ready settlements.
 
-**Live Website:** [https://sih-receipt-splitter-1.onrender.com](https://sih-receipt-splitter-1.onrender.com)
+**Live Website:** [https://uditgoel123goel-ops.github.io/sih-receipt-splitter/](https://uditgoel123goel-ops.github.io/sih-receipt-splitter/)
+
+> The frontend is hosted on GitHub Pages and calls the backend API deployed on [Render](https://sih-receipt-splitter-1.onrender.com). All receipt parsing, split calculations, and budget tracking are handled by the Render backend — the frontend is a static HTML/JS interface that communicates with it via REST API calls.
 
 ## Features
 
