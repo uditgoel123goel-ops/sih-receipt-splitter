@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-black">
+<html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#000000" />
-    <title>AI Receipt Splitter</title>
+    <meta name="theme-color" content="#fff8f1" />
+    <title>SplitSphere — AI Receipt Splitter</title>
     <meta name="description" content="Snap a bill, let AI extract the items, and split the total across your group with UPI-ready settlements." />
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <script>
@@ -16,28 +16,15 @@
               mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
             },
             colors: {
-              ink: '#05060A',
-              indigoglow: '#6C5CE7',
-              emeraldglow: '#00E5A0',
-            },
-            keyframes: {
-              pulseglow: {
-                '0%, 100%': { boxShadow: '0 0 0 0 rgba(108,92,231,0.55), 0 0 32px -4px rgba(108,92,231,0.5)' },
-                '50%': { boxShadow: '0 0 0 12px rgba(108,92,231,0.0), 0 0 56px 0px rgba(108,92,231,0.75)' },
-              },
-              drift: {
-                '0%, 100%': { transform: 'translate3d(0,0,0) scale(1)' },
-                '50%': { transform: 'translate3d(0,-18px,0) scale(1.06)' },
-              },
-              sweep: {
-                '0%': { transform: 'translateX(-120%)' },
-                '100%': { transform: 'translateX(220%)' },
-              },
-            },
-            animation: {
-              pulseglow: 'pulseglow 2.6s ease-in-out infinite',
-              drift: 'drift 14s ease-in-out infinite',
-              sweep: 'sweep 3.4s ease-in-out infinite',
+              cream: '#fff8f1',
+              card: '#ffffff',
+              accent: '#fa5d00',
+              ink: '#1d1e1c',
+              stone: '#615f5c',
+              drift: '#8e8b87',
+              bone: '#c0bbb6',
+              mist: '#d9d9d9',
+              smoke: '#a5a19c',
             },
           },
         },
@@ -45,378 +32,448 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <style>
+      * { box-sizing: border-box; }
+      body { background: #fff8f1; color: #1d1e1c; letter-spacing: 0.015em; }
+
+      /* Warm card shadow */
+      .card-shadow {
+        box-shadow: rgba(250,166,0,0.12) 0px 4px 20px 0px;
+      }
+      .card-shadow-lg {
+        box-shadow: rgba(250,166,0,0.18) 0px 6px 24px 0px;
+      }
+      .btn-shadow {
+        box-shadow: rgba(0,0,0,0.15) 0px 2px 8px 0px;
+      }
+
+      /* Upload zone */
+      .upload-zone {
+        border: 2px dashed #c0bbb6;
+        transition: all 0.3s ease;
+      }
+      .upload-zone:hover {
+        border-color: #fa5d00;
+        background: rgba(250,93,0,0.03);
+      }
+
+      /* Progress bar */
+      .progress-safe { background: #fa5d00; }
+      .progress-warn { background: #d97706; }
+      .progress-danger { background: #dc2626; }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #c0bbb6; border-radius: 3px; }
+
+      /* Settlement card hover */
+      .settle-card { transition: all 0.3s ease; }
+      .settle-card:hover { transform: translateY(-4px); box-shadow: rgba(250,166,0,0.2) 0px 12px 40px 0px; }
+
+      /* Orange focus ring for inputs */
+      input:focus, select:focus {
+        outline: none;
+        border-color: #fa5d00;
+        box-shadow: 0 0 0 3px rgba(250,93,0,0.15);
+      }
+
+      /* Hero gradient wash */
+      .hero-wash {
+        background: radial-gradient(ellipse at 30% 20%, rgba(250,93,0,0.08) 0%, rgba(254,227,181,0.12) 40%, transparent 70%);
+        pointer-events: none;
+      }
+    </style>
 </head>
 
-<body class="min-h-screen bg-ink font-sans text-white/90 antialiased selection:bg-indigoglow/40">
+<body class="min-h-screen font-sans antialiased">
 
-  <!-- cinematic lighting -->
-  <div aria-hidden="true" class="pointer-events-none fixed inset-0 overflow-hidden">
-    <div class="absolute -top-40 -left-24 h-[26rem] w-[26rem] rounded-full bg-indigoglow/25 blur-[120px] animate-drift"></div>
-    <div class="absolute top-1/3 -right-28 h-[22rem] w-[22rem] rounded-full bg-emeraldglow/15 blur-[130px] animate-drift" style="animation-delay:-6s"></div>
-    <div class="absolute bottom-0 left-1/2 h-[20rem] w-[34rem] -translate-x-1/2 rounded-full bg-indigoglow/15 blur-[140px]"></div>
-    <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(255,255,255,0.10),transparent_55%)]"></div>
-    <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
-  </div>
-
-  <div class="relative mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-40 pt-6 sm:max-w-lg">
-
-    <!-- Header -->
-    <header class="sticky top-4 z-30">
-      <div class="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-3 pl-4 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.9)] backdrop-blur-xl">
-
-        <div class="flex items-center gap-3">
-          <span class="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigoglow to-indigoglow/40 shadow-[0_0_20px_-2px_rgba(108,92,231,0.9)]">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-white" aria-hidden="true">
-              <path d="M12 3v18M7 7h7a3 3 0 0 1 0 6H7m0 0h8" />
-            </svg>
-          </span>
-          <div>
-            <h1 class="text-[15px] font-semibold leading-tight tracking-tight text-white">AI Bill Splitter</h1>
-            <p class="text-[11px] leading-tight text-white/45">Scan · Split · Settle</p>
-          </div>
-        </div>
-        <button onclick="fetchHistory()" type="button" class="group inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 text-[12px] font-medium text-white/80 transition hover:border-emeraldglow/50 hover:bg-emeraldglow/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emeraldglow/60">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 text-emeraldglow" aria-hidden="true">
-            <path d="M4 5h16M4 12h16M4 19h10" />
+  <!-- Sticky Navigation -->
+  <nav class="sticky top-0 z-40 bg-cream/90 backdrop-blur-sm border-b border-bone/30">
+    <div class="mx-auto flex max-w-2xl items-center justify-between px-5 py-3">
+      <div class="flex items-center gap-2.5">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-accent">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5 text-white">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke-linecap="round"/>
+            <rect x="9" y="3" width="6" height="4" rx="1" stroke-linecap="round"/>
+            <path d="M9 14l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          View Ledger
+        </div>
+        <span class="text-[17px] font-bold text-ink tracking-tight">SplitSphere</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <button onclick="fetchHistory()" class="text-[14px] font-medium text-stone hover:text-ink transition">History</button>
+        <button onclick="document.getElementById('receiptFile').click()" class="inline-flex items-center gap-2 rounded-16 bg-accent px-5 py-2.5 text-[14px] font-semibold text-white btn-shadow hover:bg-[#e65200] transition">
+          Extract with AI
         </button>
       </div>
-    </header>
+    </div>
+  </nav>
 
-    <main class="mt-8 flex flex-col gap-8">
+  <!-- Hero Section -->
+  <section class="relative overflow-hidden">
+    <div class="hero-wash absolute inset-0"></div>
+    <div class="relative mx-auto max-w-2xl px-5 pt-14 pb-10">
+      <div class="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1 text-[12px] font-semibold uppercase tracking-wider text-accent">
+        <span class="h-1.5 w-1.5 rounded-full bg-accent"></span>
+        AI-Powered
+      </div>
+      <h1 class="mt-5 text-[36px] font-bold leading-[1.1] tracking-tight text-ink sm:text-[44px]">
+        Split any bill in<br/>three seconds flat.
+      </h1>
+      <p class="mt-4 text-[16px] leading-relaxed text-stone max-w-md">
+        Point your camera at the receipt. We read every line item, tag who shared what, and generate UPI-ready settlements.
+      </p>
+    </div>
+  </section>
 
-      <!-- Hero line -->
-      <section aria-labelledby="hero-title">
-        <p class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white/50 backdrop-blur">
-          <span class="h-1.5 w-1.5 rounded-full bg-emeraldglow shadow-[0_0_10px_2px_rgba(0,229,160,0.8)]"></span>
-          Vision model online
-        </p>
-        <h2 id="hero-title" class="mt-4 text-pretty text-[30px] font-semibold leading-[1.15] tracking-tight text-white">
-          Split any bill in<br />
-          <span class="bg-gradient-to-r from-indigoglow via-white to-emeraldglow bg-clip-text text-transparent">three seconds flat.</span>
+  <main class="mx-auto max-w-2xl px-5 pb-24 flex flex-col gap-8">
+
+    <!-- Smart Budget Guard -->
+    <section class="bg-card rounded-20 p-7 card-shadow">
+      <div class="flex justify-between items-center mb-5">
+        <h2 class="text-[17px] font-bold text-ink flex items-center gap-2.5">
+          <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-accent/10 text-accent">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          Budget Guard
         </h2>
-        <p class="mt-3 text-pretty text-[13.5px] leading-relaxed text-white/50">
-          Point your camera at the receipt. We read every line item, tag who shared what, and generate UPI-ready settlements.
-        </p>
-      </section>
-
-     <!-- === SMART BUDGET GUARD UI === -->
-<div class="bg-gray-800/50 border border-gray-700 p-6 rounded-2xl mb-6 shadow-lg backdrop-blur-md">
-    <div class="flex justify-between items-center mb-4">
-        <h3 class="text-white font-semibold text-lg flex items-center gap-2">
-            <span>🛡️</span> Smart Budget Guard
-        </h3>
-        <div class="space-x-2">
-            <button onclick="addManualExpense()" class="text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded-full transition">+ Add Expense</button>
-            <button onclick="setNewBudget()" class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded-full transition">Edit Limit</button>
+        <div class="flex gap-2">
+          <button onclick="addManualExpense()" class="text-[12px] font-semibold text-accent bg-accent/10 hover:bg-accent/15 px-3 py-1.5 rounded-12 border border-accent/20 transition">+ Expense</button>
+          <button onclick="setNewBudget()" class="text-[12px] font-semibold text-stone bg-cream hover:bg-bone/30 px-3 py-1.5 rounded-12 border border-bone/40 transition">Edit Limit</button>
         </div>
-    </div>
-    
-    <div class="grid grid-cols-3 gap-4 mb-4 text-sm bg-gray-900/50 p-3 rounded-xl border border-gray-700">
-        <div class="flex flex-col">
-            <span class="text-gray-400 text-xs">Total Limit</span>
-            <span id="budgetLimit" class="text-white font-medium">₹0</span>
-        </div>
-        <div class="flex flex-col cursor-pointer" onclick="setFixedExpenses()" title="Click to set fixed expenses like Mess or Rent">
-            <span class="text-gray-400 text-xs hover:text-indigo-300 transition">Fixed/Mess ✏️</span>
-            <span id="fixedExpenses" class="text-white font-medium">₹0</span>
-        </div>
-        <div class="flex flex-col">
-            <span class="text-gray-400 text-xs">Spent</span>
-            <span id="spentAmount" class="text-white font-medium">₹0</span>
-        </div>
-    </div>
-    
-    <!-- Progress Bar -->
-    <div class="w-full bg-gray-700 rounded-full h-3 mb-3 overflow-hidden">
-        <div id="budgetBar" class="h-3 rounded-full bg-green-500 transition-all duration-500" style="width: 0%"></div>
-    </div>
-    
-    <div class="flex justify-between items-center mt-2">
-        <div class="flex flex-col">
-            <span class="text-gray-400 text-xs">Leftover Cash</span>
-            <span id="leftoverAmount" class="text-emerald-400 font-bold text-lg">₹0</span>
-        </div>
-        <div class="bg-indigo-500/20 text-indigo-300 px-3 py-2 rounded-lg border border-indigo-500/30 text-right">
-            <span class="block text-[10px] uppercase tracking-wider">Safe Daily Spend</span>
-            <span id="dailyLimit" class="font-bold text-sm">₹0 / day</span>
-        </div>
-    </div>
-</div>
-<!-- ============================== -->
-      <!-- Snap or Upload -->
-      <section aria-labelledby="upload-title" class="flex flex-col gap-4">
-
-        <div class="flex items-end justify-between">
-          <h3 id="upload-title" class="text-[13px] font-semibold uppercase tracking-[0.16em] text-white/70">Snap or Upload Bill</h3>
-          <span class="font-mono text-[11px] text-white/35">Step 01</span>
-        </div>
-
-        <label for="receiptFile" class="group relative block cursor-pointer overflow-hidden rounded-3xl border border-dashed border-indigoglow/45 bg-white/[0.035] p-8 text-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_0_60px_-24px_rgba(108,92,231,0.9)] backdrop-blur-xl transition hover:border-indigoglow/80 hover:bg-indigoglow/[0.07] focus-within:ring-2 focus-within:ring-indigoglow/70">
-          <span aria-hidden="true" class="absolute inset-y-0 -left-1/3 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-sweep"></span>
-          <span class="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-white/15 bg-gradient-to-br from-white/15 to-white/[0.02] shadow-[0_0_36px_-6px_rgba(108,92,231,0.9)]">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7 text-white" aria-hidden="true">
-              <path d="M14.5 4h-5L8 6H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3l-1.5-2Z" />
-              <circle cx="12" cy="12.5" r="3.2" />
-            </svg>
-          </span>
-          <span class="relative mt-5 block text-[15px] font-medium text-white">Drop your receipt here</span>
-          <span class="relative mt-1 block text-[12.5px] text-white/45">or tap to capture · JPG, PNG, HEIC, PDF up to 10 MB</span>
-          <span class="relative mt-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-4 py-2 text-[12px] font-medium text-white/85">
-            Browse files
-          </span>
-          <!-- CR: Replace input, keep id unchanged and add all desired attrs -->
-          <input type="file" id="receiptFile" accept="image/*,application/pdf" capture="environment" class="sr-only" onchange="showFileName(this)" />
-        </label>
-        <p id="fileNameDisplay" class="mt-2 text-sm text-emerald-400 font-medium text-center"></p>
-        <button onclick="parseReceipt()" type="button" class="relative w-full animate-pulseglow overflow-hidden rounded-2xl bg-gradient-to-r from-indigoglow via-[#7d6ef0] to-indigoglow px-6 py-4 text-[14.5px] font-semibold tracking-tight text-white transition active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
-          <span aria-hidden="true" class="absolute inset-x-0 top-0 h-px bg-white/50"></span>
-          <span class="inline-flex items-center justify-center gap-2">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" aria-hidden="true">
-              <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z" />
-            </svg>
-            Extract Items with AI
-          </span>
-        </button>
-        <p id="loading" class="hidden text-indigo-400 font-medium mt-3 text-center animate-pulse">🤖 Reading receipt...</p>
-      </section>
-
-      <!-- Section 2: History Ledger (Hidden by default) -->
-      <section id="historySection" class="hidden mb-6 p-5 bg-amber-100/10 rounded-2xl border border-amber-400/20">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-bold text-amber-100">Past Splits</h2>
-            <button onclick="document.getElementById('historySection').classList.add('hidden')" class="text-xs font-bold text-amber-300 rounded-xl px-2 py-1 bg-amber-900/10 hover:bg-amber-900/20 transition">Close</button>
-        </div>
-        <div id="historyContainer" class="space-y-3 max-h-64 overflow-y-auto"></div>
-      </section>
-
-      <!-- Configuration & Items sections remain the same, but update input styles for high-contrast -->
-      <section id="configSection" class="hidden flex flex-col gap-4 p-0">
-        <div class="flex items-end justify-between">
-          <h3 class="text-[13px] font-semibold uppercase tracking-[0.16em] text-white/70 mb-1">Group Details</h3>
-          <span class="font-mono text-[11px] text-white/35">Step 02</span>
-        </div>
-        <input type="text" id="friendsInput" value="Udit, Aman, Priya" onchange="rebuildUI()" class="w-full text-sm h-12 rounded-xl border border-white/12 bg-gray-900 px-4 text-white placeholder:text-gray-400 focus:border-emeraldglow/60 focus:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-emeraldglow/25 mb-4 mt-2" />
-        <div id="payersContainer" class="space-y-2"></div>
-      </section>
-
-      <section id="itemsSection" class="hidden flex flex-col gap-4 p-0">
-        <div id="itemsContainer" class="space-y-3"></div>
-        <button onclick="calculateMultiSplit()" type="button" class="group relative w-full overflow-hidden rounded-3xl bg-gradient-to-r from-emeraldglow via-[#3df0bd] to-emeraldglow pr-0 py-5 text-[12px] font-semibold tracking-tight text-black shadow-[0_0_60px_-10px_rgba(0,229,160,0.85)] transition hover:shadow-[0_0_80px_-6px_rgba(0,229,160,1)] active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-white mt-6">
-          <span aria-hidden="true" class="absolute inset-x-0 top-0 h-px bg-white/70"></span>
-          <span aria-hidden="true" class="absolute inset-y-0 -left-1/3 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-sweep"></span>
-          <span class="relative inline-flex items-center justify-center gap-2.5">
-            Compute &amp; Save Split
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 transition group-hover:translate-x-0.5" aria-hidden="true">
-              <path d="M5 12h14M13 6l6 6-6 6" />
-            </svg>
-          </span>
-        </button>
-      </section>
-
-      <section id="settlementsSection" class="hidden border-t border-white/7 pt-6">
-        <div id="qrContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-      </section>
-
-    </main>
-
-    <!-- Sticky CTA & settlements info -->
-    <div class="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black via-black/90 to-transparent px-5 pb-6 pt-10">
-      <div class="mx-auto w-full max-w-md sm:max-w-lg">
-        <!-- This button is left empty, as actual submit is in itemsSection; but space reserved for stickiness -->
-        <p class="mt-2.5 text-center text-[11px] text-white/35">Settlements are generated as UPI deep links · no money moves without you</p>
       </div>
+
+      <div class="grid grid-cols-3 gap-3 mb-5">
+        <div class="rounded-16 bg-cream p-3.5">
+          <span class="text-drift text-[11px] font-semibold uppercase tracking-wider">Limit</span>
+          <p id="budgetLimit" class="text-ink font-bold text-[16px] mt-0.5">₹0</p>
+        </div>
+        <div class="rounded-16 bg-cream p-3.5 cursor-pointer hover:bg-bone/20 transition" onclick="setFixedExpenses()" title="Click to set fixed expenses">
+          <span class="text-drift text-[11px] font-semibold uppercase tracking-wider">Fixed</span>
+          <p id="fixedExpenses" class="text-ink font-bold text-[16px] mt-0.5">₹0</p>
+        </div>
+        <div class="rounded-16 bg-cream p-3.5">
+          <span class="text-drift text-[11px] font-semibold uppercase tracking-wider">Spent</span>
+          <p id="spentAmount" class="text-ink font-bold text-[16px] mt-0.5">₹0</p>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="w-full bg-bone/40 rounded-full h-2.5 mb-5 overflow-hidden">
+        <div id="budgetBar" class="h-2.5 rounded-full bg-accent transition-all duration-700" style="width: 0%"></div>
+      </div>
+
+      <div class="flex justify-between items-end">
+        <div>
+          <span class="text-drift text-[11px] font-semibold uppercase tracking-wider">Leftover</span>
+          <p id="leftoverAmount" class="text-accent font-extrabold text-[22px]">₹0</p>
+        </div>
+        <div class="text-right bg-accent/8 px-4 py-2.5 rounded-12">
+          <span class="block text-[10px] font-semibold uppercase tracking-wider text-accent/70">Safe Daily</span>
+          <p id="dailyLimit" class="font-bold text-[14px] text-accent">₹0 / day</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Upload Receipt -->
+    <section class="flex flex-col gap-4">
+      <div class="flex items-end justify-between">
+        <h3 class="text-[12px] font-bold uppercase tracking-[0.15em] text-accent">Snap or Upload Bill</h3>
+        <span class="text-[11px] font-semibold text-drift bg-cream border border-bone/40 px-2.5 py-0.5 rounded-full">Step 01</span>
+      </div>
+
+      <label for="receiptFile" class="upload-zone group relative block cursor-pointer overflow-hidden rounded-20 bg-card p-8 text-center card-shadow">
+        <div class="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10 border border-accent/20">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-7 w-7 text-accent">
+            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="13" r="4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <p class="mt-5 text-[16px] font-semibold text-ink">Drop your receipt here</p>
+        <p class="mt-1.5 text-[13px] text-drift">or tap to capture &middot; JPG, PNG up to 10 MB</p>
+        <span class="mt-4 inline-flex items-center gap-2 rounded-full border border-bone/50 bg-cream px-4 py-2 text-[12px] font-medium text-stone group-hover:border-accent/40 group-hover:text-accent transition">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Browse files
+        </span>
+        <input type="file" id="receiptFile" accept="image/*" capture="environment" class="sr-only" onchange="showFileName(this)" />
+      </label>
+
+      <p id="fileNameDisplay" class="text-[14px] text-accent font-medium text-center"></p>
+
+      <button onclick="parseReceipt()" class="w-full rounded-16 bg-accent px-6 py-4 text-[15px] font-semibold text-white btn-shadow hover:bg-[#e65200] transition">
+        <span class="inline-flex items-center justify-center gap-2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Extract Items with AI
+        </span>
+      </button>
+
+      <p id="loading" class="hidden text-accent font-medium mt-2 text-center animate-pulse flex items-center justify-center gap-2">
+        <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+        Reading receipt...
+      </p>
+    </section>
+
+    <!-- History Ledger -->
+    <section id="historySection" class="hidden bg-card rounded-20 p-6 card-shadow">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-[17px] font-bold text-ink flex items-center gap-2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-accent"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round"/></svg>
+          Past Splits
+        </h2>
+        <button onclick="document.getElementById('historySection').classList.add('hidden')" class="text-[12px] font-semibold text-drift hover:text-ink rounded-lg px-2.5 py-1 bg-cream hover:bg-bone/30 transition">Close</button>
+      </div>
+      <div id="historyContainer" class="space-y-3 max-h-64 overflow-y-auto"></div>
+    </section>
+
+    <!-- Group Details -->
+    <section id="configSection" class="hidden flex flex-col gap-4">
+      <div class="flex items-end justify-between">
+        <h3 class="text-[12px] font-bold uppercase tracking-[0.15em] text-accent">Group Details</h3>
+        <span class="text-[11px] font-semibold text-drift bg-cream border border-bone/40 px-2.5 py-0.5 rounded-full">Step 02</span>
+      </div>
+      <input type="text" id="friendsInput" value="" onchange="rebuildUI()" placeholder="Enter names separated by commas" class="w-full text-[14px] h-12 rounded-16 border border-bone bg-card px-4 text-ink placeholder:text-drift transition" />
+      <div id="payersContainer" class="space-y-3"></div>
+    </section>
+
+    <!-- Items Section -->
+    <section id="itemsSection" class="hidden flex flex-col gap-4">
+      <div id="itemsContainer" class="space-y-3"></div>
+      <button onclick="calculateMultiSplit()" class="w-full rounded-16 bg-accent py-4 text-[14px] font-semibold text-white btn-shadow hover:bg-[#e65200] transition mt-4">
+        <span class="inline-flex items-center justify-center gap-2.5">
+          Compute &amp; Save Split
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-4 w-4"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </button>
+    </section>
+
+    <!-- Settlements -->
+    <section id="settlementsSection" class="hidden border-t border-bone/30 pt-8">
+      <h3 class="text-[12px] font-bold uppercase tracking-[0.15em] text-accent mb-5">Settlements</h3>
+      <div id="qrContainer" class="grid grid-cols-1 gap-4"></div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-bone/30 bg-cream">
+    <div class="mx-auto max-w-2xl px-5 py-6 text-center">
+      <p class="text-[13px] text-drift">Settlements are generated as UPI deep links &middot; no money moves without you</p>
     </div>
-  </div>
+  </footer>
 
   <script>
-        let extractedData = null;
-       
+    let extractedData = null;
 
-        // --- SMART BUDGET GUARD LOGIC ---
-        const BUDGET_BASE_URL = "https://sih-receipt-splitter-1.onrender.com"; // Put your actual render URL here!
+    const BUDGET_BASE_URL = "https://sih-receipt-splitter-1.onrender.com";
 
-async function loadBudget() {
-    try {
-        const res = await fetch(`${BUDGET_BASE_URL}/api/budget`); 
+    async function loadBudget() {
+      try {
+        const res = await fetch(`${BUDGET_BASE_URL}/api/budget`);
         const data = await res.json();
-        
-        document.getElementById("budgetLimit").innerText = `₹${data.monthly_limit}`;
-        document.getElementById("fixedExpenses").innerText = `₹${data.fixed_expenses}`;
-        document.getElementById("spentAmount").innerText = `₹${data.current_spent}`;
-        document.getElementById("leftoverAmount").innerText = `₹${data.leftover}`;
-        document.getElementById("dailyLimit").innerText = `₹${data.daily_limit} / day`;
-        
+
+        document.getElementById("budgetLimit").textContent = `₹${data.monthly_limit}`;
+        document.getElementById("fixedExpenses").textContent = `₹${data.fixed_expenses}`;
+        document.getElementById("spentAmount").textContent = `₹${data.current_spent}`;
+        document.getElementById("leftoverAmount").textContent = `₹${data.leftover}`;
+        document.getElementById("dailyLimit").textContent = `₹${data.daily_limit} / day`;
+
         const bar = document.getElementById("budgetBar");
         bar.style.width = `${Math.min(data.percentage, 100)}%`;
-        
+
+        const leftover = document.getElementById("leftoverAmount");
         if (data.status === "Red") {
-            bar.className = "h-3 rounded-full bg-red-500 transition-all duration-500";
-            document.getElementById("leftoverAmount").className = "text-red-400 font-bold text-lg";
+          bar.className = "h-2.5 rounded-full bg-red-500 transition-all duration-700";
+          leftover.className = "text-red-500 font-extrabold text-[22px]";
         } else if (data.status === "Yellow") {
-            bar.className = "h-3 rounded-full bg-yellow-500 transition-all duration-500";
-            document.getElementById("leftoverAmount").className = "text-yellow-400 font-bold text-lg";
+          bar.className = "h-2.5 rounded-full bg-amber-500 transition-all duration-700";
+          leftover.className = "text-amber-500 font-extrabold text-[22px]";
         } else {
-            bar.className = "h-3 rounded-full bg-green-500 transition-all duration-500";
-            document.getElementById("leftoverAmount").className = "text-emerald-400 font-bold text-lg";
+          bar.className = "h-2.5 rounded-full bg-accent transition-all duration-700";
+          leftover.className = "text-accent font-extrabold text-[22px]";
         }
-    } catch (error) {
-        console.error("Error loading budget:", error);
+      } catch (e) { console.error("Budget load error:", e); }
     }
-}
 
-async function setNewBudget() {
-    const newLimit = prompt("Enter your new total monthly limit (in ₹):");
-    if (newLimit && !isNaN(newLimit) && Number(newLimit) > 0) {
+    async function setNewBudget() {
+      const v = prompt("Enter your monthly budget limit (₹):");
+      if (v && !isNaN(v) && Number(v) > 0) {
         await fetch(`${BUDGET_BASE_URL}/api/budget`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ new_limit: Number(newLimit) })
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ new_limit: Number(v) })
         });
-        loadBudget(); 
+        loadBudget();
+      }
     }
-}
 
-async function setFixedExpenses() {
-    const newFixed = prompt("Enter fixed expenses (e.g., Hostel/Mess/Rent) (in ₹):");
-    if (newFixed && !isNaN(newFixed) && Number(newFixed) >= 0) {
+    async function setFixedExpenses() {
+      const v = prompt("Enter fixed expenses (Hostel/Mess/Rent) (₹):");
+      if (v && !isNaN(v) && Number(v) >= 0) {
         await fetch(`${BUDGET_BASE_URL}/api/budget/fixed`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ fixed: Number(newFixed) })
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fixed: Number(v) })
         });
-        loadBudget(); 
+        loadBudget();
+      }
     }
-}
 
-async function addManualExpense() {
-    const amt = prompt("How much did you just spend? (in ₹):");
-    if (amt && !isNaN(amt) && Number(amt) > 0) {
+    async function addManualExpense() {
+      const v = prompt("How much did you spend? (₹):");
+      if (v && !isNaN(v) && Number(v) > 0) {
         await fetch(`${BUDGET_BASE_URL}/api/budget/add`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ amount: Number(amt) })
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: Number(v) })
         });
-        loadBudget(); 
+        loadBudget();
+      }
     }
-}
 
-window.addEventListener('DOMContentLoaded', loadBudget);
-        async function fetchHistory() {
-            try {
-                const res = await fetch("https://sih-receipt-splitter-1.onrender.com/api/history");
-                const data = await res.json();
-                const container = document.getElementById('historyContainer');
-                container.innerHTML = '';
-                
-                if (data.data.length === 0) {
-                    container.innerHTML = '<p class="text-sm text-amber-700">No past splits found in the database.</p>';
-                }
+    window.addEventListener("DOMContentLoaded", loadBudget);
 
-                data.data.forEach(record => {
-    let settlementsHtml = record.settlements.map(s => `<p class="text-xs text-gray-300">• <span class="text-emerald-400 font-semibold">${s.from_person}</span> owes <span class="text-emerald-400 font-semibold">${s.to_person}</span>: ₹${s.amount.toFixed(2)}</p>`).join('');
-    container.innerHTML += `
-        <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl shadow-lg text-white space-y-2">
-            <div class="flex justify-between items-center text-xs text-gray-400 border-b border-white/10 pb-2">
-                <span>📅 ${record.date}</span>
-                <span class="text-emerald-300 font-bold">Total: ₹${record.total}</span>
-            </div>
-            <div class="space-y-1 pl-1">
-                ${settlementsHtml}
-            </div>
-        </div>
-    `;
-});
-                document.getElementById('historySection').classList.remove('hidden');
-            } catch (err) {
-                alert("Could not load history.");
-            }
+    async function fetchHistory() {
+      try {
+        const res = await fetch(`${BUDGET_BASE_URL}/api/history`);
+        const data = await res.json();
+        const container = document.getElementById("historyContainer");
+        container.innerHTML = "";
+
+        if (data.data.length === 0) {
+          container.innerHTML = '<p class="text-[14px] text-drift">No past splits yet.</p>';
         }
-        function showFileName(input) {
-    const display = document.getElementById('fileNameDisplay');
-    if (input.files && input.files[0]) {
-        display.textContent = `📁 Selected file: ${input.files[0].name}`;
-    } else {
-        display.textContent = '';
+
+        data.data.forEach(r => {
+          const items = r.settlements.map(s =>
+            `<div class="flex items-center gap-2 text-[13px] text-stone">
+              <span class="h-1.5 w-1.5 rounded-full bg-accent"></span>
+              <span class="text-ink font-semibold">${s.from_person}</span>
+              <span class="text-drift">→</span>
+              <span class="text-ink font-semibold">${s.to_person}</span>
+              <span class="ml-auto font-mono text-accent font-bold">₹${s.amount.toFixed(2)}</span>
+            </div>`
+          ).join("");
+          container.innerHTML += `
+            <div class="bg-cream rounded-16 p-4 space-y-2.5">
+              <div class="flex justify-between items-center text-[12px] text-drift border-b border-bone/30 pb-2">
+                <span>${r.date}</span>
+                <span class="text-accent font-bold">₹${r.total}</span>
+              </div>
+              <div class="space-y-1.5">${items}</div>
+            </div>`;
+        });
+        document.getElementById("historySection").classList.remove("hidden");
+      } catch (e) { alert("Could not load history."); }
     }
-}
-        async function parseReceipt() {
-            const fileInput = document.getElementById('receiptFile');
-            if (!fileInput.files[0]) return alert("Please select a receipt.");
-            
-            document.getElementById('loading').classList.remove('hidden');
-            const formData = new FormData();
-            formData.append("file", fileInput.files[0]);
 
-            try {
-                const response = await fetch("https://sih-receipt-splitter-1.onrender.com/api/parse-receipt", { method: "POST", body: formData });
-                const res = await response.json();
-                if (!response.ok) return alert("🚨 AI REJECTION: " + res.detail);
-                
-                extractedData = res.data;
-                document.getElementById('configSection').classList.remove('hidden');
-                document.getElementById('itemsSection').classList.remove('hidden');
-                rebuildUI();
-            } finally {
-                document.getElementById('loading').classList.add('hidden');
-            }
-        }
+    function showFileName(input) {
+      const d = document.getElementById("fileNameDisplay");
+      d.textContent = input.files && input.files[0] ? input.files[0].name : "";
+    }
 
-        function getFriendsList() { return document.getElementById('friendsInput').value.split(',').map(s => s.trim()).filter(s => s.length > 0); }
+    async function parseReceipt() {
+      const fileInput = document.getElementById("receiptFile");
+      if (!fileInput.files[0]) return alert("Please select a receipt.");
 
-        function rebuildUI() {
-            const friends = getFriendsList();
-            const pContainer = document.getElementById('payersContainer');
-            pContainer.innerHTML = '';
-            friends.forEach((friend, idx) => {
-                pContainer.innerHTML += `
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 items-center bg-gray-900 p-2 rounded-lg border border-gray-700">
-                        <span class="text-sm font-semibold text-gray-100">${friend}</span>
-                        <input type="number" id="paid_${friend}" placeholder="Paid (₹)" value="${idx === 0 && extractedData ? extractedData.total : 0}" class="text-sm p-2 border border-gray-600 rounded bg-gray-800 text-white placeholder:text-gray-400 focus:border-emeraldglow/60 focus:bg-gray-900 focus:outline-none" />
-                        <input type="text" id="upi_${friend}" placeholder="UPI ID" value="${idx === 0 ? 'demo@upi' : ''}" class="text-sm p-2 border border-gray-600 rounded bg-gray-800 text-white placeholder:text-gray-400 focus:border-emeraldglow/60 focus:bg-gray-900 focus:outline-none" />
-                    </div>
-                `;
-            });
+      document.getElementById("loading").classList.remove("hidden");
+      const fd = new FormData();
+      fd.append("file", fileInput.files[0]);
 
-            const iContainer = document.getElementById('itemsContainer');
-            iContainer.innerHTML = '';
-            extractedData.items.forEach((item, itemIdx) => {
-                const checkboxes = friends.map(f => `<label class="text-xs bg-gray-800 text-gray-100 border border-gray-700 p-1 rounded flex items-center gap-1"><input type="checkbox" name="item_${itemIdx}" value="${f}" checked class="accent-emeraldglow mr-1"> ${f}</label>`).join('');
-                iContainer.innerHTML += `<div class="p-3 bg-gray-900 border border-gray-700 rounded shadow-sm"><p class="font-bold text-sm text-gray-100">${item.name} <span class="font-mono text-emeraldglow">(₹${item.price})</span></p><div class="flex flex-wrap gap-2 mt-2">${checkboxes}</div></div>`;
-            });
-        }
+      try {
+        const res = await fetch(`${BUDGET_BASE_URL}/api/parse-receipt`, { method: "POST", body: fd });
+        const json = await res.json();
+        if (!res.ok) return alert("AI Error: " + json.detail);
 
-        async function calculateMultiSplit() {
-            const friends = getFriendsList();
-            const payers = friends.map(f => ({ name: f, amount_paid: parseFloat(document.getElementById(`paid_${f}`).value) || 0, upi_id: document.getElementById(`upi_${f}`).value }));
-            const items = extractedData.items.map((item, idx) => ({ name: item.name, price: item.price, assigned_to: Array.from(document.querySelectorAll(`input[name="item_${idx}"]:checked`)).map(cb => cb.value) }));
+        extractedData = json.data;
+        document.getElementById("configSection").classList.remove("hidden");
+        document.getElementById("itemsSection").classList.remove("hidden");
+        rebuildUI();
+      } finally {
+        document.getElementById("loading").classList.add("hidden");
+      }
+    }
 
-            try {
-                const response = await fetch("https://sih-receipt-splitter-1.onrender.com/api/calculate-split", {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ tax: extractedData.tax || 0, service_charge: extractedData.service_charge || 0, payers, items })
-                });
-                const data = await response.json();
-                
-                const qrContainer = document.getElementById('qrContainer');
-                qrContainer.innerHTML = '';
-                data.settlements.forEach(s => {
-    qrContainer.innerHTML += `
-        <div class="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl shadow-xl text-white flex flex-col items-center text-center space-y-3">
-            <div class="space-y-1">
-                <p class="text-xs text-gray-300 uppercase tracking-wider font-semibold">Payment Instruction</p>
-                <p class="text-lg font-bold text-white">
-                    <span class="text-emerald-400">${s.from_person}</span> pays <span class="text-emerald-400">${s.to_person}</span>
+    function getFriendsList() {
+      return document.getElementById("friendsInput").value.split(",").map(s => s.trim()).filter(s => s.length > 0);
+    }
+
+    function rebuildUI() {
+      const friends = getFriendsList();
+      const pc = document.getElementById("payersContainer");
+      pc.innerHTML = "";
+      const evenShare = extractedData ? Math.round(extractedData.total / friends.length * 100) / 100 : 0;
+      friends.forEach((f, i) => {
+        pc.innerHTML += `
+          <div class="bg-card rounded-20 p-4 flex flex-col sm:grid sm:grid-cols-3 gap-3 items-center card-shadow">
+            <span class="text-[14px] font-semibold text-ink">${f}</span>
+            <input type="number" id="paid_${f}" placeholder="Paid (₹)" value="${evenShare}" class="w-full text-[13px] p-2.5 rounded-16 border border-bone bg-card text-ink placeholder:text-drift transition" />
+            <input type="text" id="upi_${f}" placeholder="UPI ID" value="" class="w-full text-[13px] p-2.5 rounded-16 border border-bone bg-card text-ink placeholder:text-drift transition" />
+          </div>`;
+      });
+
+      const ic = document.getElementById("itemsContainer");
+      ic.innerHTML = "";
+      extractedData.items.forEach((item, idx) => {
+        const checks = friends.map(f =>
+          `<label class="inline-flex items-center gap-1.5 text-[12px] font-medium text-stone bg-cream border border-bone/50 px-3 py-1.5 rounded-12 cursor-pointer hover:border-accent/40 hover:text-ink transition">
+            <input type="checkbox" name="item_${idx}" value="${f}" checked class="accent-accent rounded" />
+            ${f}
+          </label>`
+        ).join("");
+        ic.innerHTML += `
+          <div class="bg-card rounded-20 p-5 card-shadow">
+            <div class="flex justify-between items-center mb-3">
+              <p class="text-[14px] font-semibold text-ink">${item.name}</p>
+              <span class="font-mono text-[14px] text-accent font-bold">₹${item.price}</span>
+            </div>
+            <div class="flex flex-wrap gap-2">${checks}</div>
+          </div>`;
+      });
+    }
+
+    async function calculateMultiSplit() {
+      const friends = getFriendsList();
+      const payers = friends.map(f => ({
+        name: f,
+        amount_paid: parseFloat(document.getElementById(`paid_${f}`).value) || 0,
+        upi_id: document.getElementById(`upi_${f}`).value
+      }));
+      const items = extractedData.items.map((item, idx) => ({
+        name: item.name,
+        price: item.price,
+        assigned_to: Array.from(document.querySelectorAll(`input[name="item_${idx}"]:checked`)).map(c => c.value)
+      }));
+
+      try {
+        const res = await fetch(`${BUDGET_BASE_URL}/api/calculate-split`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tax: extractedData.tax || 0, service_charge: extractedData.service_charge || 0, payers, items })
+        });
+        const data = await res.json();
+
+        const qc = document.getElementById("qrContainer");
+        qc.innerHTML = "";
+        data.settlements.forEach(s => {
+          qc.innerHTML += `
+            <div class="settle-card bg-card rounded-20 p-6 text-center space-y-3 card-shadow">
+              <div class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-accent/10 text-accent">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div>
+                <p class="text-[11px] text-drift uppercase tracking-wider font-semibold">Payment</p>
+                <p class="text-[16px] font-bold text-ink mt-1.5">
+                  <span class="text-accent">${s.from_person}</span>
+                  <span class="text-bone mx-1.5">→</span>
+                  <span class="text-accent">${s.to_person}</span>
                 </p>
-                <p class="text-2xl font-extrabold text-emerald-300">₹${s.amount.toFixed(2)}</p>
-            </div>
-            ${s.qr_code_url ? `<img src="${s.qr_code_url}" class="w-40 h-40 object-contain rounded-xl border border-white/20 bg-white p-2">` : ''}
-        </div>
-    `;
-});
-                document.getElementById('settlementsSection').classList.remove('hidden');
-                alert("Split calculated and saved to Database ledger!");
-            } catch (err) { alert("Error calculating split."); }
-        }
-    </script>
+                <p class="text-[32px] font-extrabold text-ink mt-1">₹${s.amount.toFixed(2)}</p>
+              </div>
+              ${s.qr_code_url ? `<img src="${s.qr_code_url}" class="w-36 h-36 mx-auto object-contain rounded-16 border border-bone/30 bg-card p-2" alt="UPI QR" />` : ''}
+            </div>`;
+        });
+        document.getElementById("settlementsSection").classList.remove("hidden");
+        alert("Split calculated and saved!");
+      } catch (e) { alert("Error calculating split."); }
+    }
+  </script>
 </body>
 </html>
