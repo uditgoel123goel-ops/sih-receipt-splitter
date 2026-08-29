@@ -1,6 +1,8 @@
-# AI Receipt Splitter
+# SplitSphere
 
 Snap a receipt, let AI extract every line item, and split the total across your group with UPI-ready settlements.
+
+**Live Website:** [https://sih-receipt-splitter-1.onrender.com](https://sih-receipt-splitter-1.onrender.com)
 
 ## Features
 
@@ -34,39 +36,6 @@ sih-receipt-splitter/
     ├── index.html           # Main UI
     └── index_backup.html    # Backup/lighter version
 ```
-
-## Setup
-
-### Prerequisites
-
-- Python 3.8+
-- A free Groq API key from [console.groq.com](https://console.groq.com)
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/<your-username>/sih-receipt-splitter.git
-cd sih-receipt-splitter
-
-# Create virtual environment
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Create .env file with your API key
-echo "GROQ_API_KEY=gsk_your_key_here" > .env
-
-# Start the server
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-Open [http://localhost:8000](http://localhost:8000) in your browser.
-
-> **Note:** The production frontend has hardcoded URLs pointing to the Render deployment. For local development, change the URLs in `frontend/index.html` from `https://sih-receipt-splitter-1.onrender.com` to `http://localhost:8000`, or use `index_backup.html` which already points to localhost.
 
 ## API Endpoints
 
