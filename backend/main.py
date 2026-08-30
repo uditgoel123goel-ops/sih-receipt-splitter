@@ -320,6 +320,6 @@ def add_expense(req: ExpenseAdd):
 
 # --- VERY IMPORTANT: Static Files Must Be Mounted LAST ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FRONTEND_DIR = os.path.join(BASE_DIR, "../frontend")
+FRONTEND_DIR = os.path.join(BASE_DIR, "..")
 if os.path.exists(FRONTEND_DIR):
     app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
