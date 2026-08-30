@@ -29,14 +29,12 @@ Snap a receipt, let AI extract every line item, and split the total across your 
 
 ```
 sih-receipt-splitter/
-├── backend/
-│   ├── main.py              # FastAPI server (all API endpoints)
-│   ├── requirements.txt     # Python dependencies
-│   ├── history.db           # SQLite database (auto-created)
-│   └── test_ai.py           # Groq API connectivity test
-└── frontend/
-    ├── index.html           # Main UI
-    └── index_backup.html    # Backup/lighter version
+├── index.html               # Main UI (served by GitHub Pages & Render)
+└── backend/
+    ├── main.py              # FastAPI server (all API endpoints)
+    ├── requirements.txt     # Python dependencies
+    ├── history.db           # SQLite database (auto-created)
+    └── test_ai.py           # Groq API connectivity test
 ```
 
 ## API Endpoints
