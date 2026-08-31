@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,32 +7,45 @@
     <title>AI Receipt Splitter</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-100 min-h-screen p-6 font-sans text-slate-800">
-    <div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
-        
-        <div class="border-b pb-4 mb-6 flex justify-between items-center">
+<body style="background-color:#030303" class="min-h-screen grid grid-cols-[260px_1fr] p-8 font-sans text-slate-100">
+    <aside class="hidden md:block h-screen sticky top-0 w-[260px] bg-neutral-900/60 text-slate-100 p-6 border-r border-white/5 backdrop-blur-md">
+        <h2 class="text-xl font-bold mb-4">Navigation</h2>
+        <nav class="space-y-2">
+            <button onclick="switchView('bill-splitter')" id="btn-bill-splitter" class="w-full text-left px-3 py-2 rounded hover:bg-cyan-900 hover:text-cyan-300 transition shadow-sm">Bill Splitter</button>
+            <button onclick="switchView('personal-expenses')" id="btn-personal-expenses" class="w-full text-left px-3 py-2 rounded hover:bg-cyan-900 hover:text-cyan-300 transition shadow-sm">Personal Expenses</button>
+        </nav>
+    </aside>
+
+
+
+    <main class="w-full max-w-none px-8 py-6 flex flex-col gap-8">
+
+        <div id="view-bill-splitter" class="flex flex-col gap-8">
+            <div class="border-b pb-4 mb-6 flex justify-between items-center">
             <div>
-                <h1 class="text-3xl font-extrabold text-indigo-900">🧾 AI Bill Splitter</h1>
-                <p class="text-slate-500 text-sm">Snap a receipt, split costs, and save to your ledger.</p>
+                <h1 class="text-3xl font-extrabold text-cyan-300">🧾 AI Bill Splitter</h1>
+                <p class="text-slate-300 text-sm">Snap a receipt, split costs, and save to your ledger.</p>
             </div>
             <button onclick="fetchHistory()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-700">
                 📜 View Ledger
             </button>
         </div>
 
-        <!-- Section 1: Upload (Now with Mobile Camera Support) -->
-        <div class="mb-6 p-4 bg-slate-50 rounded-xl border border-dashed border-slate-300">
-            <label class="block text-sm font-semibold text-slate-700 mb-2">1. 📸 Snap or Upload Bill</label>
+                
+
+            <!-- Section 1: Upload (Now with Mobile Camera Support) -->
+        <div class="mb-6 p-6 bg-neutral-900/80 rounded-2xl border border-white/10 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.7)]">
+            <label class="block text-lg md:text-xl font-extrabold text-cyan-200 mb-3">1. 📸 Snap or Upload Bill</label>
             <!-- Notice the 'capture="environment"' below -->
-            <input type="file" id="receiptFile" accept="image/*" capture="environment" class="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-200 rounded-lg p-2 bg-white" />
-            <button onclick="parseReceipt()" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-lg transition shadow">
+            <input type="file" id="receiptFile" accept="image/*" capture="environment" class="block w-full text-sm text-slate-100 bg-transparent file:mr-4 file:py-3 file:px-6 file:rounded-md file:border file:border-white/10 file:text-sm file:font-semibold file:bg-black file:text-white hover:file:bg-neutral-800 border border-white/5 rounded-lg p-2" />
+            <button onclick="parseReceipt()" class="mt-4 w-full bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-semibold py-2.5 px-4 rounded-lg transition shadow-lg">
                 Extract Items with AI
             </button>
-            <p id="loading" class="hidden text-indigo-600 font-medium mt-3 text-center animate-pulse">🤖 Reading receipt...</p>
+            <p id="loading" class="hidden text-cyan-300 font-medium mt-3 text-center animate-pulse">🤖 Reading receipt...</p>
         </div>
 
         <!-- Section 2: History Ledger (Hidden by default) -->
-        <div id="historySection" class="hidden mb-6 p-5 bg-amber-50 rounded-xl border border-amber-200">
+        <div id="historySection" class="hidden mb-6 p-5 bg-neutral-900/80 rounded-xl border border-white/10">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-lg font-bold text-amber-900">Past Splits</h2>
                 <button onclick="document.getElementById('historySection').classList.add('hidden')" class="text-xs font-bold text-amber-700">Close</button>
@@ -40,9 +54,9 @@
         </div>
 
         <!-- Configuration & Items sections remain the same -->
-        <div id="configSection" class="hidden mb-6 p-5 bg-indigo-50 rounded-xl border border-indigo-100">
+        <div id="configSection" class="hidden mb-6 p-5 bg-neutral-900/80 rounded-xl border border-white/10">
             <h2 class="text-lg font-bold text-indigo-900 mb-3">2. Group Details</h2>
-            <input type="text" id="friendsInput" value="Udit, Aman, Priya" onchange="rebuildUI()" class="w-full text-sm p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none mb-4" />
+            <input type="text" id="friendsInput" value="Udit, Aman, Priya" onchange="rebuildUI()" class="w-full text-sm p-2 bg-neutral-900 text-cyan-300 placeholder-neutral-500 rounded border border-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none mb-4" />
             <div id="payersContainer" class="space-y-2"></div>
         </div>
 
@@ -56,7 +70,67 @@
         <div id="settlementsSection" class="hidden border-t pt-6">
             <div id="qrContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </div>
-    </div>
+        </div>
+
+        <div id="view-personal-expenses" class="hidden flex flex-col gap-8">
+            <section id="personalExpensesSection" class="bg-neutral-900/80 text-slate-100 p-6 rounded-xl border border-white/10 backdrop-blur-xl">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                    <div class="md:col-span-2">
+                        <h2 class="text-2xl font-bold mb-3 text-cyan-300">Personal Expenses</h2>
+                        <label class="text-sm text-slate-300">Describe your day (e.g. "bought a t-shirt for 2000, spent 500 on lunch")</label>
+                        <div class="mt-2 flex gap-2">
+                            <textarea id="nlInput" rows="2" class="w-full p-3 bg-neutral-900/70 text-slate-100 rounded-md focus:outline-none border border-white/5" placeholder="Today I bought coffee for 150 and paid 200 for dinner"></textarea>
+                            <button id="btnParseNL" class="bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-400 hover:to-indigo-400 text-black px-4 py-2 rounded-md">Parse</button>
+                        </div>
+
+                        <div class="mt-6 bg-neutral-900/70 p-4 rounded-md border border-white/5">
+                            <h3 class="font-semibold text-lg text-slate-100">Recent Expenses</h3>
+                            <div id="recentList" class="mt-3 space-y-2 max-h-48 overflow-y-auto"></div>
+                        </div>
+                    </div>
+
+                    <aside class="w-full md:col-span-1">
+                        <div class="bg-neutral-900/70 p-4 rounded-md mb-4 border border-white/5">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-semibold text-slate-100">Budget Summary</h3>
+                                <button id="openFixedModal" title="Edit fixed expenses" class="text-slate-200 hover:text-white">✏️</button>
+                            </div>
+                            <div class="mt-3 text-sm space-y-2 text-slate-200">
+                                <div class="flex justify-between"><span>Total Limit</span><input id="totalLimit" type="number" value="10000" class="w-24 text-right bg-neutral-900 text-cyan-300 placeholder-neutral-500 rounded px-2 py-0.5 border border-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none" /></div>
+                                <div class="flex justify-between"><span>Fixed/Mess</span><span id="fixedSum" class="text-emerald-300">₹0</span></div>
+                                <div class="flex justify-between"><span>Spent</span><span id="spentSum" class="text-emerald-300">₹0</span></div>
+                            </div>
+                            <div class="mt-3 h-2 bg-neutral-900/60 rounded overflow-hidden">
+                                <div id="budgetBar" class="h-full bg-emerald-400 w-0 shadow-[0_0_12px_rgba(16,185,129,0.6)]"></div>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+
+                <!-- Large Daily Chart at bottom -->
+                <div class="mt-6">
+                    <div id="dailyChartLarge" class="w-full h-44 bg-neutral-900/70 rounded-md border border-white/5 p-4 flex items-end gap-3"></div>
+                    <div id="dailyLabelsLarge" class="flex justify-between text-xs text-slate-400 mt-2"></div>
+                </div>
+
+                <!-- Fixed Expenses Modal (hidden) -->
+                <div id="fixedModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
+                    <div class="bg-neutral-900/80 text-slate-100 w-full max-w-md p-6 rounded-md border border-white/10 backdrop-blur-xl">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-bold">Edit Fixed Expenses</h4>
+                            <button id="closeFixedModal" class="text-slate-300">✖</button>
+                        </div>
+                        <div id="fixedList" class="space-y-2 max-h-40 overflow-y-auto mb-4"></div>
+                        <div class="flex gap-2">
+                            <input id="fixedName" placeholder="Name" class="flex-1 p-2 bg-neutral-900 text-cyan-300 placeholder-neutral-500 rounded border border-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none" />
+                            <input id="fixedAmount" type="number" placeholder="Amount" class="w-28 p-2 bg-neutral-900 text-cyan-300 placeholder-neutral-500 rounded border border-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none" />
+                            <button id="addFixed" class="bg-emerald-400 px-3 rounded text-black">Add</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
 
     <script>
         let extractedData = null;
@@ -75,10 +149,10 @@
                 data.data.forEach(record => {
                     let settlementsHtml = record.settlements.map(s => `<p class="text-xs text-slate-600">${s.from_person} owes ${s.to_person}: ₹${s.amount}</p>`).join('');
                     container.innerHTML += `
-                        <div class="bg-white p-3 rounded shadow-sm border border-amber-100">
-                            <p class="font-bold text-sm text-slate-800">Date: ${record.date} • Total: ₹${record.total}</p>
-                            <div class="mt-2 pl-2 border-l-2 border-amber-200">${settlementsHtml}</div>
-                        </div>
+                        <div class="bg-neutral-900/70 p-3 rounded shadow-sm border border-amber-700">
+                                    <p class="font-bold text-sm text-slate-100">Date: ${record.date} • Total: ₹${record.total}</p>
+                                    <div class="mt-2 pl-2 border-l-2 border-amber-700">${settlementsHtml}</div>
+                                </div>
                     `;
                 });
                 document.getElementById('historySection').classList.remove('hidden');
@@ -117,10 +191,10 @@
             pContainer.innerHTML = '';
             friends.forEach((friend, idx) => {
                 pContainer.innerHTML += `
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 items-center bg-white p-2 rounded-lg border">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 items-center bg-neutral-900/70 p-2 rounded-lg border border-white/5">
                         <span class="text-sm font-semibold">${friend}</span>
-                        <input type="number" id="paid_${friend}" placeholder="Paid (₹)" value="${idx === 0 && extractedData ? extractedData.total : 0}" class="text-sm p-1.5 border rounded" />
-                        <input type="text" id="upi_${friend}" placeholder="UPI ID" value="${idx === 0 ? 'demo@upi' : ''}" class="text-sm p-1.5 border rounded" />
+                        <input type="number" id="paid_${friend}" placeholder="Paid (₹)" value="${idx === 0 && extractedData ? extractedData.total : 0}" class="text-sm p-1.5 bg-neutral-900 text-cyan-300 placeholder-neutral-500 border border-white/10 rounded focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none" />
+                        <input type="text" id="upi_${friend}" placeholder="UPI ID" value="${idx === 0 ? 'demo@upi' : ''}" class="text-sm p-1.5 bg-neutral-900 text-cyan-300 placeholder-neutral-500 border border-white/10 rounded focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none" />
                     </div>
                 `;
             });
@@ -128,8 +202,8 @@
             const iContainer = document.getElementById('itemsContainer');
             iContainer.innerHTML = '';
             extractedData.items.forEach((item, itemIdx) => {
-                const checkboxes = friends.map(f => `<label class="text-xs bg-slate-50 border p-1 rounded"><input type="checkbox" name="item_${itemIdx}" value="${f}" checked> ${f}</label>`).join('');
-                iContainer.innerHTML += `<div class="p-3 bg-white border rounded shadow-sm"><p class="font-bold text-sm">${item.name} (₹${item.price})</p><div class="flex gap-2 mt-2">${checkboxes}</div></div>`;
+                const checkboxes = friends.map(f => `<label class="text-xs bg-neutral-800/60 text-slate-200 border border-white/5 p-1 rounded"><input type="checkbox" name="item_${itemIdx}" value="${f}" checked class="mr-1"> ${f}</label>`).join('');
+                iContainer.innerHTML += `<div class="p-3 bg-neutral-900/70 border rounded shadow-sm border-white/5"><p class="font-bold text-sm text-slate-100">${item.name} (₹${item.price})</p><div class="flex gap-2 mt-2">${checkboxes}</div></div>`;
             });
         }
 
@@ -147,18 +221,181 @@
                 
                 const qrContainer = document.getElementById('qrContainer');
                 qrContainer.innerHTML = '';
-                data.settlements.forEach(s => {
+                data.settlements.forEach((s, idx) => {
+                    // prepare fallback QR URL using public API
+                    const fallbackData = encodeURIComponent(`upi://pay?pa=${encodeURIComponent(s.to_person || 'demo@upi')}&am=${s.amount}`);
+                    const fallbackUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${fallbackData}`;
+                    // choose primary URL if present, else fallback
+                    const primary = s.qr_code_url && s.qr_code_url.length>10 ? s.qr_code_url : fallbackUrl;
+
                     qrContainer.innerHTML += `
-                        <div class="bg-white border rounded p-4 text-center shadow-sm">
-                            <p class="font-bold">${s.from_person} ➔ ${s.to_person}</p>
-                            <p class="text-2xl text-emerald-600 font-bold my-2">₹${s.amount}</p>
-                            ${s.qr_code_url ? `<img src="${s.qr_code_url}" class="w-32 h-32 mx-auto">` : ''}
+                        <div id="qrcode_${idx}" class="bg-neutral-900/70 border border-white/10 rounded-xl p-4 flex flex-col justify-center items-center shadow-sm m-2">
+                            <p class="font-bold text-slate-100">${s.from_person} ➔ ${s.to_person}</p>
+                            <p class="text-2xl text-emerald-300 font-bold my-2">₹${s.amount}</p>
+                            <img id="qrimg_${idx}" src="${primary}" class="w-40 h-40 mx-auto" alt="qr-${idx}">
                         </div>`;
+
+                    // attach error handler to image to ensure fallback always loads
+                    setTimeout(()=>{
+                        const img = document.getElementById(`qrimg_${idx}`);
+                        if(!img) return;
+                        img.onerror = function(){
+                            // try fallback URL if primary failed
+                            if(this.src !== fallbackUrl){ this.src = fallbackUrl; }
+                            else { /* final fallback: generate a simple data-URI placeholder */
+                                const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><rect width='100%' height='100%' fill='%23030b11'/><text x='50%' y='50%' fill='%23fff' font-size='12' text-anchor='middle' dominant-baseline='central'>QR Unavailable</text></svg>`;
+                                this.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+                            }
+                        };
+                    }, 50);
                 });
-                document.getElementById('settlementsSection').classList.remove('hidden');
+                // reveal settlements section immediately
+                const settleEl = document.getElementById('settlementsSection'); if(settleEl) settleEl.classList.remove('hidden');
                 alert("Split calculated and saved to Database ledger!");
             } catch (err) { alert("Error calculating split."); }
         }
+    </script>
+    <script>
+        // Personal Expenses state
+        const personalExpenses = [];
+        const fixedExpenses = [];
+
+        // View switcher: 'bill-splitter' or 'personal-expenses'
+        function switchView(viewName){
+            const views = { 'bill-splitter':'view-bill-splitter', 'personal-expenses':'view-personal-expenses' };
+            Object.values(views).forEach(id=>{ const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
+            const active = views[viewName];
+            if(active){ const ael = document.getElementById(active); if(ael) ael.classList.remove('hidden'); }
+            // active button styling
+            document.getElementById('btn-bill-splitter').classList.remove('bg-cyan-900','text-cyan-300');
+            document.getElementById('btn-personal-expenses').classList.remove('bg-cyan-900','text-cyan-300');
+            if(viewName==='bill-splitter') document.getElementById('btn-bill-splitter').classList.add('bg-cyan-900','text-cyan-300');
+            if(viewName==='personal-expenses') document.getElementById('btn-personal-expenses').classList.add('bg-cyan-900','text-cyan-300');
+        }
+
+        // Helpers
+        function formatRupees(v){ return `₹${Number(v||0).toFixed(0)}`; }
+
+        // Natural language parser (simple heuristics)
+        function parseNaturalText(text){
+            const parts = text.split(/,| and |;|\band\b/gi).map(s=>s.trim()).filter(Boolean);
+            const results = [];
+            parts.forEach(p=>{
+                const m = p.match(/₹?\s*(\d+(?:\.\d+)?)/);
+                if(m){
+                    const amount = parseFloat(m[1]);
+                    let desc = p.replace(m[0],'').replace(/\bfor\b/gi,'').replace(/\bspent\b/gi,'').trim();
+                    if(!desc) desc = 'Expense';
+                    results.push({ desc, amount, date: new Date().toISOString() });
+                }
+            });
+            return results;
+        }
+
+        function addExpense(item){
+            personalExpenses.unshift(item);
+            renderRecentList();
+            renderBudget();
+            renderDailyChart();
+        }
+
+        // UI renderers
+        function renderRecentList(){
+            const container = document.getElementById('recentList');
+            container.innerHTML = '';
+            personalExpenses.slice(0,50).forEach((e,idx)=>{
+                const row = document.createElement('div');
+                row.className = 'flex justify-between items-center bg-slate-700 p-2 rounded';
+                row.innerHTML = `<div><div class="font-semibold">${e.desc}</div><div class="text-xs text-slate-300">${new Date(e.date).toLocaleString()}</div></div><div class="text-emerald-400 font-bold">${formatRupees(e.amount)}</div>`;
+                container.appendChild(row);
+            });
+            const spent = personalExpenses.reduce((s,i)=>s+Number(i.amount||0),0) + fixedExpenses.reduce((s,i)=>s+Number(i.amount||0),0);
+            document.getElementById('spentSum').textContent = formatRupees(spent);
+        }
+
+        function renderBudget(){
+            const total = Number(document.getElementById('totalLimit').value)||0;
+            const fixed = fixedExpenses.reduce((s,i)=>s+Number(i.amount||0),0);
+            const spent = personalExpenses.reduce((s,i)=>s+Number(i.amount||0),0) + fixed;
+            document.getElementById('fixedSum').textContent = formatRupees(fixed);
+            document.getElementById('spentSum').textContent = formatRupees(spent);
+            const pct = total>0? Math.min(100, Math.round((spent/total)*100)) : 0;
+            document.getElementById('budgetBar').style.width = pct + '%';
+        }
+
+        // Fixed expenses modal
+        function renderFixedList(){
+            const el = document.getElementById('fixedList');
+            el.innerHTML = '';
+            fixedExpenses.forEach((f,idx)=>{
+                const row = document.createElement('div');
+                row.className = 'flex justify-between items-center bg-slate-700 p-2 rounded';
+                row.innerHTML = `<div>${f.name}</div><div class="flex items-center gap-2"><div>${formatRupees(f.amount)}</div><button data-idx="${idx}" class="text-red-400">Delete</button></div>`;
+                el.appendChild(row);
+            });
+            // attach delete handlers
+            el.querySelectorAll('button[data-idx]').forEach(b=> b.addEventListener('click', e=>{ const i = Number(e.target.dataset.idx); fixedExpenses.splice(i,1); renderFixedList(); renderBudget(); renderDailyChart(); }));
+        }
+
+        // Daily chart (last 7 days) - renders to large neon chart
+        function renderDailyChart(){
+            const days = Array.from({length:7}).map((_,i)=>{
+                const d = new Date(); d.setDate(d.getDate()- (6-i)); return d;
+            });
+            const sums = days.map(day=>{
+                const key = day.toISOString().slice(0,10);
+                const s1 = personalExpenses.filter(e=> e.date.slice(0,10)===key).reduce((s,i)=>s+Number(i.amount||0),0);
+                return s1;
+            });
+            const max = Math.max(1, ...sums);
+            const chart = document.getElementById('dailyChartLarge');
+            if(!chart) return;
+            chart.innerHTML = '';
+            sums.forEach((v,idx)=>{
+                const h = Math.round((v/max)*100);
+                const barWrap = document.createElement('div');
+                barWrap.style.flex = '1'; barWrap.style.display='flex'; barWrap.style.alignItems='flex-end';
+                const bar = document.createElement('div');
+                bar.style.height = Math.max(4, (v/max)*100) + '%';
+                bar.style.width = '100%';
+                bar.style.borderRadius = '6px 6px 0 0';
+                bar.style.background = 'linear-gradient(180deg, rgba(56,189,248,0.9), rgba(99,102,241,0.9))';
+                bar.style.boxShadow = '0 0 12px rgba(56,189,248,0.15), 0 6px 18px rgba(99,102,241,0.08)';
+                bar.title = `${new Date(days[idx]).toLocaleDateString()}: ${formatRupees(v)}`;
+                barWrap.appendChild(bar);
+                chart.appendChild(barWrap);
+            });
+            const labels = document.getElementById('dailyLabelsLarge');
+            if(labels){ labels.innerHTML = days.map(d=> d.toLocaleDateString(undefined,{month:'short',day:'numeric'}) ).map(l=>`<div>${l}</div>`).join(''); labels.style.display='flex'; labels.style.justifyContent='space-between'; }
+        }
+
+        // Wire controls
+        document.getElementById('btnParseNL').addEventListener('click', ()=>{
+            const t = document.getElementById('nlInput').value || '';
+            const parsed = parseNaturalText(t);
+            parsed.forEach(p=> addExpense(p));
+            document.getElementById('nlInput').value = '';
+        });
+
+        document.getElementById('openFixedModal').addEventListener('click', ()=>{
+            document.getElementById('fixedModal').classList.remove('hidden'); document.getElementById('fixedModal').classList.add('flex'); renderFixedList();
+        });
+        document.getElementById('closeFixedModal').addEventListener('click', ()=>{ document.getElementById('fixedModal').classList.add('hidden'); document.getElementById('fixedModal').classList.remove('flex'); });
+        document.getElementById('addFixed').addEventListener('click', ()=>{
+            const name = document.getElementById('fixedName').value.trim(); const amount = Number(document.getElementById('fixedAmount').value)||0;
+            if(!name || amount<=0) return alert('Provide name and amount');
+            fixedExpenses.push({ name, amount, date: new Date().toISOString() });
+            document.getElementById('fixedName').value = ''; document.getElementById('fixedAmount').value=''; renderFixedList(); renderBudget(); renderDailyChart();
+        });
+
+        document.getElementById('totalLimit').addEventListener('change', ()=> renderBudget());
+
+        // Sidebar link removed; use switchView instead
+
+        // Initialize visuals
+        renderBudget(); renderDailyChart();
+        // Show default view
+        switchView('bill-splitter');
     </script>
 </body>
 </html>

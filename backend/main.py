@@ -16,7 +16,11 @@ from groq import Groq
 from PIL import Image, ImageEnhance
 from pydantic import BaseModel
 
-app = FastAPI(title="SIH Multi-Payer Expense Splitter API")
+_ENV_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(_ENV_DIR, "../.env"))
+load_dotenv(os.path.join(_ENV_DIR, ".env"), override=True)
+
+app = FastAPI(title="SIH Multi-Payer Expense Splitter API", redirect_slashes=False)
 
 # --- DATABASE SETUP ---
 conn = sqlite3.connect("history.db", check_same_thread=False)
@@ -49,20 +53,47 @@ cursor.execute("""
     )
 """)
 conn.commit()
+
+# 3. Personal Expenses Tables (additive only)
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS daily_expenses (
+        id INTEGER PRIMARY KEY,
+        title TEXT,
+        amount REAL,
+        category TEXT,
+        date TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+""")
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS fixed_expenses (
+        id INTEGER PRIMARY KEY,
+        name TEXT,
+        amount REAL,
+        category TEXT,
+        due_date INTEGER
+    )
+""")
+conn.commit()
 conn.close()
 # -----------------------------------------
-
-load_dotenv()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_origin_regex=r".*",
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+if not GROQ_API_KEY:
+    raise RuntimeError(
+        "GROQ_API_KEY is missing. Add it to backend/.env (or a .env file one level up in the project root) "
+        "as GROQ_API_KEY=gsk_... and restart the server."
+    )
 groq_client = Groq(api_key=GROQ_API_KEY)
 
 # --- Data Models ---
@@ -91,6 +122,21 @@ class ExpenseAdd(BaseModel):
 
 class FixedUpdate(BaseModel):
     fixed: float
+
+class ExpenseTextRequest(BaseModel):
+    text: str
+
+class DailyExpense(BaseModel):
+    title: str
+    amount: float
+    category: str
+    date: str
+
+class FixedExpense(BaseModel):
+    name: str
+    amount: float
+    category: str
+    due_date: int
 
 
 # --- API Endpoints ---
@@ -237,6 +283,7 @@ def calculate_multi_payer_split(req: MultiPayerSplitRequest):
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO history (timestamp, total_bill, settlements) VALUES (?, ?, ?)",
+
         (
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
             effective_total,
@@ -301,13 +348,55 @@ def update_budget(req: BudgetUpdate):
     return {"message": "Budget limit updated"}
 
 @app.post("/api/budget/fixed")
-def update_fixed(req: FixedUpdate):
+# Create the table for individual fixed expenses if it doesn't exist
+def init_fixed_db():
     conn = sqlite3.connect("history.db")
     cursor = conn.cursor()
-    cursor.execute("UPDATE budget SET fixed_expenses = ? WHERE id = 1", (req.fixed,))
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS fixed_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            amount REAL
+        )
+    """)
     conn.commit()
     conn.close()
-    return {"message": "Fixed expenses updated"}
+
+init_fixed_db()
+
+@app.get("/api/budget/fixed/list")
+def get_fixed_list():
+    conn = sqlite3.connect("history.db")
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM fixed_items")
+    items = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return items
+
+@app.post("/api/budget/fixed/add")
+def add_fixed_item(req: dict):
+    conn = sqlite3.connect("history.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO fixed_items (name, amount) VALUES (?, ?)", (req.get("name"), req.get("amount")))
+    
+    # Update the total in the budget table automatically
+    cursor.execute("UPDATE budget SET fixed_expenses = (SELECT COALESCE(SUM(amount), 0) FROM fixed_items) WHERE id = 1")
+    conn.commit()
+    conn.close()
+    return {"message": "Fixed expense added"}
+
+@app.delete("/api/budget/fixed/{item_id}")
+def delete_fixed_item(item_id: int):
+    conn = sqlite3.connect("history.db")
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM fixed_items WHERE id = ?", (item_id,))
+    
+    # Update the total in the budget table automatically
+    cursor.execute("UPDATE budget SET fixed_expenses = (SELECT COALESCE(SUM(amount), 0) FROM fixed_items) WHERE id = 1")
+    conn.commit()
+    conn.close()
+    return {"message": "Fixed expense deleted"}
 
 @app.post("/api/budget/add")
 def add_expense(req: ExpenseAdd):
@@ -317,6 +406,128 @@ def add_expense(req: ExpenseAdd):
     conn.commit()
     conn.close()
     return {"message": "Expense added manually"}
+
+# --- Personal Expenses Module (additive; does not alter existing routes) ---
+EXTRACT_SYSTEM_PROMPT = (
+    "You are a financial AI. Extract expenses from the user's text. "
+    "Return ONLY a valid JSON array of objects with keys: 'title', 'amount', 'category'. "
+    "Do NOT wrap the response in markdown blocks (e.g., no ```json). Do NOT add explanations."
+)
+
+@app.post("/api/expenses/extract")
+@app.post("/api/expenses/extract/")
+def extract_expenses(req: ExpenseTextRequest):
+    try:
+        chat_completion = groq_client.chat.completions.create(
+            model="qwen/qwen3.6-27b",
+            messages=[
+                {"role": "system", "content": "You are a financial AI. Extract expenses from the user's text and return a JSON object containing a key named 'expenses' which is an array of objects with keys: 'title', 'amount', 'category'."},
+                {"role": "user", "content": req.text},
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=2048,
+        )
+        
+        import re
+        raw_response = chat_completion.choices[0].message.content or ""
+        
+        # 1. Strip markdown backticks
+        cleaned = re.sub(r"```(?:json)?", "", raw_response).replace("```", "").strip()
+        
+        # 2. Extract ONLY the JSON block
+        json_match = re.search(r'(\[.*\]|\{.*\})', cleaned, re.DOTALL)
+        if json_match:
+            cleaned = json_match.group(1)
+            
+        parsed = json.loads(cleaned)
+        
+        # 3. Handle both direct list or wrapped dictionary (e.g., {"expenses": [...]})
+        if isinstance(parsed, dict):
+            found_list = None
+            for value in parsed.values():
+                if isinstance(value, list):
+                    found_list = value
+                    break
+            if found_list is not None:
+                parsed = found_list
+            else:
+                parsed = [parsed]
+                
+        if not isinstance(parsed, list):
+            raise ValueError("AI response did not yield a valid expense list")
+            
+        return parsed
+
+    except HTTPException:
+        raise
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="AI failed to generate valid JSON format. Try again.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+@app.post("/api/expenses/daily")
+def create_daily_expense(req: DailyExpense):
+    try:
+        conn = sqlite3.connect("history.db")
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO daily_expenses (title, amount, category, date) VALUES (?, ?, ?, ?)",
+            (req.title, req.amount, req.category, req.date),
+        )
+        conn.commit()
+        conn.close()
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/expenses/daily")
+def get_daily_expenses(month: str = None):
+    try:
+        conn = sqlite3.connect("history.db")
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        if month:
+            cursor.execute(
+                "SELECT id, title, amount, category, date, created_at FROM daily_expenses WHERE date LIKE ? ORDER BY date DESC, id DESC",
+                (month + "%",),
+            )
+        else:
+            cursor.execute(
+                "SELECT id, title, amount, category, date, created_at FROM daily_expenses ORDER BY date DESC, id DESC"
+            )
+        rows = [dict(r) for r in cursor.fetchall()]
+        conn.close()
+        return rows
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/expenses/fixed")
+def create_fixed_expense(req: FixedExpense):
+    try:
+        conn = sqlite3.connect("history.db")
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO fixed_expenses (name, amount, category, due_date) VALUES (?, ?, ?, ?)",
+            (req.name, req.amount, req.category, req.due_date),
+        )
+        conn.commit()
+        conn.close()
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/expenses/fixed")
+def get_fixed_expenses():
+    try:
+        conn = sqlite3.connect("history.db")
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name, amount, category, due_date FROM fixed_expenses ORDER BY due_date ASC, id ASC")
+        rows = [dict(r) for r in cursor.fetchall()]
+        conn.close()
+        return rows
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # --- VERY IMPORTANT: Static Files Must Be Mounted LAST ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
